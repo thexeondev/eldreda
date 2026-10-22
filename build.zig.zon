@@ -1,0 +1,7 @@
+.{
+    .name = .eldreda,
+    .version = "0.0.1",
+    .minimum_zig_version = "0.17.0",
+    .paths = .{""},
+    .fingerprint = 0xe3683c212e3d1337,
+}

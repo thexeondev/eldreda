@@ -1,0 +1,5 @@
+zig-out/
+.zig-dist/
+.zig-cache/
+eldreda-storage/
+proto/

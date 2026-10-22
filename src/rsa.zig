@@ -1,0 +1,196 @@
+const std = @import("std");
+const assert = std.debug.assert;
+const base64 = std.base64.standard;
+const Allocator = std.mem.Allocator;
+
+pub const version = 3;
+pub const key_size = 128;
+pub const plaintext_per_block = @sizeOf(Block) - 11;
+
+pub const Block = [key_size]u8;
+
+const Modulus = std.crypto.ff.Modulus(key_size * 8);
+const hash_size: usize = 32;
+
+pub const client_public_key: PublicKey = .{
+    .modulus = .{
+        0xae, 0x44, 0x28, 0x0a, 0xd1, 0x92, 0xe5, 0x84, 0xab, 0xcf, 0x19, 0xbc,
+        0xf5, 0x6a, 0xb7, 0x19, 0x24, 0x7f, 0xbb, 0x0e, 0x40, 0x24, 0x3c, 0x06,
+        0xaa, 0xef, 0xad, 0x91, 0x75, 0x62, 0x67, 0x03, 0x85, 0xf0, 0x7e, 0xb1,
+        0x80, 0xbe, 0xca, 0x3e, 0x2d, 0x8e, 0x54, 0x04, 0xc7, 0x0a, 0x86, 0x8d,
+        0x14, 0xb4, 0xc0, 0x0f, 0x99, 0xe5, 0x2d, 0x28, 0xe0, 0xd2, 0x91, 0xc4,
+        0x02, 0xa1, 0xda, 0x7e, 0xf5, 0xed, 0xce, 0x3e, 0x06, 0x87, 0xcb, 0x6f,
+        0x17, 0x60, 0x3a, 0xff, 0xcc, 0x81, 0xe5, 0xc7, 0x93, 0xdc, 0xeb, 0x33,
+        0xa3, 0xd5, 0x11, 0xe5, 0xde, 0xe1, 0xb0, 0x8e, 0x79, 0xb3, 0x16, 0xf7,
+        0xed, 0x05, 0x29, 0x40, 0xb1, 0xd8, 0xa3, 0x12, 0xac, 0xef, 0xd1, 0x68,
+        0x84, 0x9e, 0xf8, 0x67, 0x95, 0x76, 0x2e, 0x04, 0x98, 0xfb, 0x45, 0xef,
+        0x6c, 0x6c, 0x4c, 0x1f, 0x18, 0x71, 0x1d, 0x37,
+    },
+    .exponent = @as([125]u8, @splat(0)) ++ @as([3]u8, .{ 1, 0, 1 }),
+};
+
+pub const server_private_key: PrivateKey = .{
+    .modulus = .{
+        0x7c, 0x01, 0x67, 0x63, 0xf5, 0x2f, 0x97, 0xbd, 0x43, 0x7d, 0x8e, 0xa8,
+        0x56, 0x72, 0xa8, 0x2c, 0xe3, 0x75, 0xb3, 0x5e, 0x14, 0x89, 0x19, 0x42,
+        0x10, 0x0e, 0x58, 0x03, 0x63, 0x86, 0xa8, 0xc3, 0xf4, 0x20, 0x5b, 0xd2,
+        0xd7, 0x09, 0x63, 0xf9, 0xde, 0x76, 0x37, 0xdb, 0x59, 0x2c, 0x55, 0xcf,
+        0x8d, 0x85, 0x65, 0x96, 0x1e, 0x70, 0x5c, 0x1e, 0x80, 0x53, 0xd7, 0xae,
+        0xc7, 0x6e, 0xe5, 0xa5, 0xe7, 0x3a, 0x12, 0xdf, 0x29, 0x57, 0x69, 0x44,
+        0x60, 0xc1, 0x45, 0xa9, 0x56, 0xc0, 0x36, 0x0b, 0xac, 0x0d, 0x93, 0x68,
+        0xc9, 0x2a, 0x1e, 0x6b, 0xa8, 0x63, 0x59, 0x7c, 0xba, 0x35, 0x71, 0x28,
+        0x2f, 0x33, 0xeb, 0x94, 0x3f, 0xbd, 0xd0, 0x7e, 0x32, 0x0e, 0xaa, 0x54,
+        0x67, 0x98, 0xa2, 0xdb, 0x96, 0xbc, 0xb4, 0xb2, 0x27, 0xd9, 0x14, 0xc4,
+        0xc1, 0xb3, 0x77, 0x8e, 0x7d, 0x8d, 0x82, 0x01,
+    },
+    .private_exponent = .{
+        0x2d, 0xe9, 0x37, 0x26, 0x42, 0xf8, 0xc3, 0xed, 0x46, 0xb7, 0x8d,
+        0xc1, 0xb5, 0x7f, 0xed, 0xd3, 0xf0, 0xc2, 0xfb, 0x0d, 0xb1, 0xfc,
+        0xb0, 0x65, 0x4d, 0x1c, 0x82, 0x69, 0x7e, 0xc7, 0xb4, 0x64, 0x18,
+        0x56, 0x82, 0xa8, 0xa5, 0x04, 0xcd, 0x07, 0x0d, 0xde, 0x27, 0x00,
+        0x07, 0x1b, 0xeb, 0x09, 0x55, 0x14, 0x36, 0x70, 0x46, 0x04, 0xc3,
+        0x96, 0x67, 0x5c, 0xa3, 0x56, 0x0a, 0x70, 0x7c, 0x85, 0x53, 0xf5,
+        0x0c, 0x0a, 0xd5, 0xe8, 0xd5, 0x2a, 0x6c, 0xfa, 0xaa, 0xd5, 0xc9,
+        0x91, 0xd3, 0x31, 0x37, 0x0a, 0x4e, 0x9a, 0x5a, 0x5b, 0x44, 0x2e,
+        0x6e, 0x88, 0x8f, 0xdf, 0x6a, 0x53, 0x5a, 0xd3, 0x69, 0xe5, 0x72,
+        0x33, 0x59, 0xe0, 0x58, 0x53, 0xbb, 0x49, 0x8b, 0xd1, 0xf2, 0xbc,
+        0x99, 0x78, 0x83, 0xca, 0x11, 0xbc, 0x04, 0xae, 0xe9, 0x91, 0xdd,
+        0xe9, 0xaa, 0xa5, 0x39, 0x2f, 0xed, 0xa1,
+    },
+};
+
+const sign_oid: []const u8 = &.{
+    0x30, 0x31, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03,
+    0x04, 0x02, 0x01, 0x05, 0x00, 0x04, 0x20,
+};
+
+pub const PublicKey = struct {
+    modulus: [key_size]u8,
+    exponent: [key_size]u8,
+
+    pub fn encrypt(key: *const PublicKey, out: *Block, data: []const u8) void {
+        assert(data.len <= plaintext_per_block);
+
+        out[0] = 0x00;
+        out[1] = 0x02;
+
+        for (out[2..][0 .. out.len - data.len - 3]) |*padding|
+            padding.* = 0xFF; // TODO: this can be random
+
+        out[2 + out.len - data.len - 3] = 0x00; // termination
+
+        @memcpy(out[out.len - data.len ..][0..data.len], data);
+
+        const modulus = Modulus.fromBytes(&key.modulus, .big) catch unreachable;
+        const exponent = Modulus.Fe.fromBytes(modulus, &key.exponent, .big) catch unreachable;
+
+        const int = Modulus.Fe.fromBytes(modulus, out, .big) catch unreachable;
+        const ciphertext = modulus.powPublic(int, exponent) catch unreachable;
+        ciphertext.toBytes(out, .big) catch unreachable;
+    }
+};
+
+pub const PrivateKey = struct {
+    modulus: [key_size]u8,
+    private_exponent: [key_size]u8,
+
+    pub fn sign(key: *const PrivateKey, out: *Block, plaintext: []const u8) void {
+        out[0] = 0x00;
+        out[1] = 0x01;
+
+        const padding_end = out.len - sign_oid.len - hash_size - 1;
+        for (out[2..padding_end]) |*padding|
+            padding.* = 0xFF;
+
+        out[padding_end] = 0x00;
+        @memcpy(out[padding_end + 1 ..][0..sign_oid.len], sign_oid);
+        std.crypto.hash.sha2.Sha256.hash(plaintext, out[padding_end + 1 + sign_oid.len ..], .{});
+
+        const modulus = Modulus.fromBytes(&key.modulus, .big) catch unreachable;
+        const exponent = Modulus.Fe.fromBytes(modulus, &key.private_exponent, .big) catch unreachable;
+
+        const int = Modulus.Fe.fromBytes(modulus, out, .big) catch unreachable;
+        const ciphertext = modulus.pow(int, exponent) catch unreachable;
+        ciphertext.toBytes(out, .big) catch unreachable;
+    }
+
+    /// The contents of `buffer` are replaced with decrypted data.
+    /// Returns slice into `buffer`.
+    pub fn decrypt(key: *const PrivateKey, block: *Block) ?[]const u8 {
+        const modulus = Modulus.fromBytes(&key.modulus, .big) catch unreachable;
+        const exponent = Modulus.Fe.fromBytes(modulus, &key.private_exponent, .big) catch unreachable;
+
+        const int = Modulus.Fe.fromBytes(modulus, block, .big) catch
+            return null;
+
+        const plaintext = modulus.pow(int, exponent) catch unreachable;
+        plaintext.toBytes(block, .big) catch unreachable;
+
+        const padding_end = 3 + (std.mem.findScalar(u8, block[2..], 0) orelse return null);
+        return block[padding_end..];
+    }
+};
+
+pub const BlockBase64 = [base64.Encoder.calcSize(@sizeOf(Block))]u8;
+
+pub const EncryptAndSignBuffer = struct {
+    ciphertext: BlockBase64,
+    sign: BlockBase64,
+};
+
+/// Encrypts and signs exactly one RSA block.
+pub fn encryptAndSign(output: *EncryptAndSignBuffer, input: []const u8) void {
+    var ciphertext: Block = undefined;
+    var sign: Block = undefined;
+
+    client_public_key.encrypt(&ciphertext, input);
+    server_private_key.sign(&sign, input);
+
+    _ = base64.Encoder.encode(&output.ciphertext, &ciphertext);
+    _ = base64.Encoder.encode(&output.sign, &sign);
+}
+
+pub fn encryptAlloc(gpa: Allocator, plaintext: []const u8) Allocator.Error![]u8 {
+    const blocks_count = @divCeil(plaintext.len, plaintext_per_block);
+    var result: std.ArrayList(u8) = try .initCapacity(gpa, @sizeOf(Block) * blocks_count);
+    errdefer comptime unreachable;
+
+    var block_index: usize = 0;
+    while (block_index < blocks_count) : (block_index += 1) {
+        const plaintext_remaining = plaintext[plaintext_per_block * block_index ..];
+        const plaintext_truncated = if (plaintext_remaining.len > plaintext_per_block)
+            plaintext_remaining[0..plaintext_per_block]
+        else
+            plaintext_remaining;
+
+        const ciphertext = result.addManyAsArrayAssumeCapacity(@sizeOf(Block));
+        client_public_key.encrypt(ciphertext, plaintext_truncated);
+    }
+
+    return result.toOwnedSliceAssert();
+}
+
+/// Decrypts a base64-encoded string containing exactly one block.
+/// Invalidates `string` by performing base64 decoding and decryption in-place.
+/// Returns a slice into `string`.
+pub fn decryptString(
+    string: []u8,
+) ?[]const u8 {
+    const size = base64.Decoder.calcSizeForSlice(string) catch
+        return null;
+
+    if (size != @sizeOf(Block)) return null;
+
+    // Decoding is performed in-place. This is the output slice.
+    const block = string[0..@sizeOf(Block)];
+    base64.Decoder.decode(block, string) catch return null;
+    return server_private_key.decrypt(block);
+}
+
+pub fn decryptStringAsArray(
+    string: []u8,
+    comptime len: usize,
+) ?*const [len]u8 {
+    const result = decryptString(string) orelse return null;
+    return if (result.len == len) result[0..len] else null;
+}
