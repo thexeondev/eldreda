@@ -125,6 +125,7 @@ pub fn main(init: process.Init.Minimal) !void {
         .public_url_prefix = public_url_prefix,
     });
 
+    var ip4_string_buffer: ["255.255.255.255".len]u8 = undefined;
     const query_gateway_response = try eldreda.dispatch.buildQueryGatewayResponse(.{
         .gpa = gpa,
         .arena = arena,
@@ -132,7 +133,17 @@ pub fn main(init: process.Init.Minimal) !void {
         .region_title = "Eldreda",
         .client_secret_key = conf.client_secret_key,
         .cdn = &conf.version.cdn,
-        .gateway = .{ .ip = "127.0.0.1", .port = 20501 },
+        .gateway = switch (gate_address) {
+            .ip4 => |ip4| .{
+                .ip = mem.print(
+                    &ip4_string_buffer,
+                    "{d}.{d}.{d}.{d}",
+                    .{ ip4.bytes[0], ip4.bytes[1], ip4.bytes[2], ip4.bytes[3] },
+                ) catch unreachable,
+                .port = ip4.port,
+            },
+            .ip6 => fatal("ipv6 is not supported for gateway", .{}),
+        },
     });
 
     const fallback_dispatch_response = try eldreda.dispatch.buildFallbackResponse(.{
