@@ -134,13 +134,20 @@ pub fn main(init: process.Init.Minimal) !void {
         .client_secret_key = conf.client_secret_key,
         .cdn = &conf.version.cdn,
         .gateway = switch (gate_address) {
-            .ip4 => |ip4| .{
-                .ip = mem.print(
-                    &ip4_string_buffer,
-                    "{d}.{d}.{d}.{d}",
-                    .{ ip4.bytes[0], ip4.bytes[1], ip4.bytes[2], ip4.bytes[3] },
-                ) catch unreachable,
-                .port = ip4.port,
+            .ip4 => |ip4| ip4: {
+                // TODO: technically this can be achieved if desired,
+                // move gateway's `net.Server` initialization to be before
+                // this response is serialized.
+                if (ip4.port == 0) fatal("gateway port cannot be random", .{});
+
+                break :ip4 .{
+                    .ip = mem.print(
+                        &ip4_string_buffer,
+                        "{d}.{d}.{d}.{d}",
+                        .{ ip4.bytes[0], ip4.bytes[1], ip4.bytes[2], ip4.bytes[3] },
+                    ) catch unreachable,
+                    .port = ip4.port,
+                };
             },
             .ip6 => fatal("ipv6 is not supported for gateway", .{}),
         },
