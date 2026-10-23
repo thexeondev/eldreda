@@ -35,6 +35,7 @@ pub const Avatar = extern struct {
     }
 
     level_up: LevelUp,
+    flags: Flags,
 
     pub const List = struct {
         count: u32,
@@ -139,6 +140,11 @@ pub const Avatar = extern struct {
             return @as(u32, rank) * 10;
         }
     };
+
+    pub const Flags = packed struct(u8) {
+        favorite: bool,
+        _: u7 = 0,
+    };
 };
 
 avatars: Avatar.List,
@@ -150,6 +156,7 @@ pub fn initDefaults(player: *Player) void {
 
     const avatar_maxed_out: Avatar = .{
         .level_up = comptime Avatar.LevelUp.fromRankAndLevel(6, 60).?,
+        .flags = .{ .favorite = false },
     };
 
     for (templates.AvatarBase.table.items(.id)) |id_int| {

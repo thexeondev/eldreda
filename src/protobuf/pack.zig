@@ -38,6 +38,7 @@ pub fn avatarInfo(out: *gen.AvatarInfo, options: struct {
         .id = @backingInt(options.id),
         .level = options.data.level_up.getLevel(),
         .rank = options.data.level_up.getRank(),
+        .is_favorite = options.data.flags.favorite,
         .unlocked_talent_num = 6,
         .mindscape_tab_state = &.{ false, false, false, true, true, true },
         .skill_type_level = &skills,

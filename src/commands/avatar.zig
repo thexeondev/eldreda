@@ -24,3 +24,30 @@ pub fn GetAvatarDataCsReq(session: *Session) !void {
         .avatar_list = avatar_list.items,
     });
 }
+
+pub fn AvatarFavoriteCsReq(session: *Session) !void {
+    const request = try session.command.decodeBody(protobuf.gen.AvatarFavoriteCsReq.Decoded);
+    const avatar_id = Player.Avatar.Id.fromInt(request.avatar_id) orelse
+        return session.sink.respondMinimal(.AvatarFavoriteScRsp, .{ .retcode = 1 });
+    const avatar_index = session.player.avatars.getIndexById(avatar_id) orelse
+        return session.sink.respondMinimal(.AvatarFavoriteScRsp, .{ .retcode = 1 });
+
+    const data = &session.player.avatars.data()[avatar_index];
+
+    if (data.flags.favorite != request.is_favorite) {
+        session.playerModified();
+        data.flags.favorite = true;
+
+        var avatar_info: protobuf.gen.AvatarInfo = undefined;
+        protobuf.pack.avatarInfo(
+            &avatar_info,
+            .{ .id = avatar_id, .data = data.* },
+        );
+
+        try session.sink.notify(protobuf.gen.PlayerSyncScNotify, &.{
+            .avatar = .{ .avatar_list = (&avatar_info)[0..1] },
+        });
+    }
+
+    return session.sink.respondMinimal(.AvatarFavoriteScRsp, .{ .retcode = 0 });
+}
