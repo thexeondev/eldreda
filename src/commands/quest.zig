@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const eldreda = @import("../eldreda.zig");
+const Player = eldreda.Player;
 const Session = eldreda.Session;
 const protobuf = eldreda.protobuf;
 
@@ -38,14 +39,18 @@ pub fn StartTrainingQuestCsReq(session: *Session) !void {
     if (avatar_id_list.items.len == 0)
         return session.sink.respondMinimal(.StartTrainingQuestScRsp, .{ .retcode = 1 });
 
-    var avatar_buffer: [3]protobuf.gen.AvatarInfo = undefined;
+    var avatar_buffer: [Player.Avatar.count_max]protobuf.gen.AvatarInfo = undefined;
     var avatar_list: std.ArrayList(protobuf.gen.AvatarInfo) = .initBuffer(&avatar_buffer);
 
-    for (avatar_id_list.items) |avatar_id|
+    for (
+        session.player.avatars.keys(),
+        session.player.avatars.data(),
+    ) |id, data| {
         protobuf.pack.avatarInfo(
             avatar_list.addOneAssumeCapacity(),
-            avatar_id,
+            .{ .id = id, .data = data },
         );
+    }
 
     try session.sink.notify(protobuf.gen.EnterSceneScNotify, &.{
         .scene = .{

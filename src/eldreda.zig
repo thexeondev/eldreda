@@ -11,6 +11,7 @@ pub const random = @import("random.zig");
 pub const Session = @import("Session.zig");
 pub const commands = @import("commands.zig");
 pub const templates = @import("templates.zig");
+pub const Player = @import("Player.zig");
 
 test {
     std.testing.refAllDecls(@This());

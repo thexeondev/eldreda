@@ -1,3 +1,5 @@
+const Session = @This();
+
 const std = @import("std");
 const Io = std.Io;
 const assert = std.debug.assert;
@@ -5,13 +7,22 @@ const assert = std.debug.assert;
 const eldreda = @import("eldreda.zig");
 const Command = eldreda.Command;
 const protobuf = eldreda.protobuf;
+const Player = eldreda.Player;
 
 time: Io.Timestamp,
 command: Command,
 sink: Sink,
 player_uid: u32,
+player: *Player,
+player_needs_save: bool,
 
 pub const Error = protobuf.DecodeError || Command.EncodeError;
+
+/// Each handler should call this function in one exact place.
+pub fn playerModified(session: *Session) void {
+    assert(!session.player_needs_save); // see doc comment for `playerModified`
+    session.player_needs_save = true;
+}
 
 pub const Sink = struct {
     buffer: []u8,

@@ -27,16 +27,42 @@ const build_mode_has_safety = switch (builtin.optimize) {
 const default_http_address = "127.0.0.1:12401";
 const default_gate_address = "127.0.0.1:20501";
 const default_public_url_prefix = "http://127.0.0.1:12401";
-const default_storage_path = "eldreda-storage";
 const sdk_account_storage_filename = "sdk_accounts.bin";
 const default_config_path = "eldreda.zon";
 
+pub const Storage = struct {
+    const default_root_path = "eldreda-storage";
+    const player_dir_sub_path = "players";
+
+    root: Io.Dir,
+    player_dir: Io.Dir,
+
+    fn open(io: Io, root_path: []const u8) Storage {
+        const root = Io.Dir.cwd().createDirPathOpen(io, root_path, .{}) catch |err| fatal(
+            "failed to open storage root at {q}: {t}",
+            .{ root_path, err },
+        );
+
+        const player_dir = root.createDirPathOpen(io, player_dir_sub_path, .{}) catch |err| fatal(
+            "failed to open player storage sub-directory {q}: {t}",
+            .{ player_dir_sub_path, err },
+        );
+
+        return .{ .root = root, .player_dir = player_dir };
+    }
+
+    fn close(storage: Storage, io: Io) void {
+        storage.player_dir.close(io);
+        storage.root.close(io);
+    }
+};
+
 pub const Server = struct {
     conf: *const Configuration,
+    storage: Storage,
     query_dispatch_response: []const u8,
     query_gateway_response: []const u8,
     fallback_dispatch_response: []const u8,
-    storage_dir: Io.Dir,
     /// Not threadsafe. Lock `sdk_account_storage_mutex` before accessing.
     sdk_account_storage: *sdk.Account.Storage,
     /// Guards `sdk_account_storage`.
@@ -60,7 +86,7 @@ fn usage(io: Io) noreturn {
         default_http_address,
         default_gate_address,
         default_public_url_prefix,
-        default_storage_path,
+        Storage.default_root_path,
     })) catch {};
     process.exit(0);
 }
@@ -83,7 +109,7 @@ pub fn main(init: process.Init.Minimal) !void {
     var config_path_maybe: ?[]const u8 = null;
     var http_address = comptime IpAddress.parseLiteral(default_http_address) catch unreachable;
     var gate_address = comptime IpAddress.parseLiteral(default_gate_address) catch unreachable;
-    var storage_path: []const u8 = default_storage_path;
+    var storage_path: []const u8 = Storage.default_root_path;
     var public_url_prefix: []const u8 = default_public_url_prefix;
 
     const args_slice = try init.args.toSlice(arena);
@@ -159,24 +185,23 @@ pub fn main(init: process.Init.Minimal) !void {
         .supported_version = conf.version.tag,
     });
 
-    const storage_dir = Io.Dir.cwd().createDirPathOpen(io, storage_path, .{}) catch |err|
-        fatal("failed to open storage directory {q}: {t}", .{ storage_path, err });
-    defer storage_dir.close(io);
+    const storage: Storage = .open(io, storage_path);
+    defer storage.close(io);
 
     var sdk_account_storage = sdk.loadAccountStorageFromFileIfExists(
         io,
         gpa,
-        storage_dir,
+        storage.root,
         sdk_account_storage_filename,
     ) catch |err| fatal("failed to load account storage: {t}", .{err});
     defer sdk_account_storage.deinit(gpa);
 
     var server: Server = .{
         .conf = &conf,
+        .storage = storage,
         .query_dispatch_response = query_dispatch_response,
         .query_gateway_response = query_gateway_response,
         .fallback_dispatch_response = fallback_dispatch_response,
-        .storage_dir = storage_dir,
         .sdk_account_storage = &sdk_account_storage,
         .sdk_account_storage_mutex = .init,
     };
@@ -505,7 +530,7 @@ fn getAndVerifyAccountByPassword(
 
     if (!result.found) try sdk.saveAccountStorage(
         io,
-        scope.server.storage_dir,
+        scope.server.storage.root,
         sdk_account_storage_filename,
         storage,
     );

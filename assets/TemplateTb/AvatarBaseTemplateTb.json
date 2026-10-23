@@ -9,7 +9,14 @@
       "audio_bank": "BK_Anbi|BK_CHR_Common|BK_Anbi_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 1
+      "camp": 1,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Anbi",
+      "unk_7": 0,
+      "unk_8": 10101,
+      "unlockable": true
     },
     {
       "id": 1021,
@@ -20,7 +27,14 @@
       "audio_bank": "BK_Tsubaki|BK_CHR_Common|BK_Tsubaki_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 1
+      "camp": 1,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Tsubaki",
+      "unk_7": 0,
+      "unk_8": 10104,
+      "unlockable": true
     },
     {
       "id": 1031,
@@ -31,7 +45,14 @@
       "audio_bank": "BK_Nicole|BK_CHR_Common|BK_Nicole_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 1
+      "camp": 1,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Nicole",
+      "unk_7": 0,
+      "unk_8": 10103,
+      "unlockable": true
     },
     {
       "id": 1041,
@@ -42,7 +63,14 @@
       "audio_bank": "BK_Longinus|BK_CHR_Common|BK_Longinus_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 5
+      "camp": 5,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Longinus",
+      "unk_7": 0,
+      "unk_8": 10501,
+      "unlockable": true
     },
     {
       "id": 1051,
@@ -53,7 +81,14 @@
       "audio_bank": "BK_Yidhari|BK_CHR_Common|BK_Yidhari_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 11
+      "camp": 11,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Yidhari",
+      "unk_7": 0,
+      "unk_8": 11105,
+      "unlockable": true
     },
     {
       "id": 1061,
@@ -64,7 +99,14 @@
       "audio_bank": "BK_Corin|BK_CHR_Common|BK_Corin_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 2
+      "camp": 2,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Corin",
+      "unk_7": 0,
+      "unk_8": 10201,
+      "unlockable": true
     },
     {
       "id": 1071,
@@ -75,7 +117,14 @@
       "audio_bank": "BK_Caesar|BK_CHR_Common|BK_Caesar_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 4
+      "camp": 4,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Caesar",
+      "unk_7": 0,
+      "unk_8": 10403,
+      "unlockable": true
     },
     {
       "id": 1081,
@@ -86,7 +135,14 @@
       "audio_bank": "BK_Billy|BK_CHR_Common|BK_Billy_VO",
       "unk_1": 0,
       "gender": 1,
-      "camp": 1
+      "camp": 1,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Billy",
+      "unk_7": 0,
+      "unk_8": 10102,
+      "unlockable": true
     },
     {
       "id": 1091,
@@ -97,7 +153,14 @@
       "audio_bank": "BK_Unagi|BK_CHR_Common|BK_Unagi_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 6
+      "camp": 6,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Unagi",
+      "unk_7": 0,
+      "unk_8": 10604,
+      "unlockable": true
     },
     {
       "id": 1101,
@@ -108,7 +171,14 @@
       "audio_bank": "BK_Koleda|BK_CHR_Common|BK_Koleda_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 3
+      "camp": 3,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Koleda",
+      "unk_7": 0,
+      "unk_8": 10301,
+      "unlockable": true
     },
     {
       "id": 1111,
@@ -119,7 +189,14 @@
       "audio_bank": "BK_Anton|BK_CHR_Common|BK_Anton_VO",
       "unk_1": 0,
       "gender": 1,
-      "camp": 3
+      "camp": 3,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Anton",
+      "unk_7": 0,
+      "unk_8": 10303,
+      "unlockable": true
     },
     {
       "id": 1121,
@@ -130,7 +207,14 @@
       "audio_bank": "BK_Ben|BK_CHR_Common|BK_Ben_VO",
       "unk_1": 0,
       "gender": 1,
-      "camp": 3
+      "camp": 3,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Ben",
+      "unk_7": 0,
+      "unk_8": 10302,
+      "unlockable": true
     },
     {
       "id": 1131,
@@ -141,7 +225,14 @@
       "audio_bank": "BK_Aokaku|BK_CHR_Common|BK_Aokaku_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 6
+      "camp": 6,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Aokaku",
+      "unk_7": 0,
+      "unk_8": 10601,
+      "unlockable": true
     },
     {
       "id": 1141,
@@ -152,7 +243,14 @@
       "audio_bank": "BK_Lycaon|BK_CHR_Common|BK_Lycaon_VO",
       "unk_1": 0,
       "gender": 1,
-      "camp": 2
+      "camp": 2,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Lycaon",
+      "unk_7": 0,
+      "unk_8": 10202,
+      "unlockable": true
     },
     {
       "id": 1151,
@@ -163,7 +261,14 @@
       "audio_bank": "BK_Lucy|BK_CHR_Common|BK_Lucy_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 4
+      "camp": 4,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Lucy",
+      "unk_7": 0,
+      "unk_8": 10401,
+      "unlockable": true
     },
     {
       "id": 1161,
@@ -174,7 +279,14 @@
       "audio_bank": "BK_Lighter|BK_CHR_Common|BK_Lighter_VO",
       "unk_1": 0,
       "gender": 1,
-      "camp": 4
+      "camp": 4,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Lighter",
+      "unk_7": 0,
+      "unk_8": 10405,
+      "unlockable": true
     },
     {
       "id": 1171,
@@ -185,7 +297,14 @@
       "audio_bank": "BK_Burnice|BK_CHR_Common|BK_Burnice_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 4
+      "camp": 4,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Burnice",
+      "unk_7": 0,
+      "unk_8": 10404,
+      "unlockable": true
     },
     {
       "id": 1181,
@@ -196,7 +315,14 @@
       "audio_bank": "BK_Lisa|BK_CHR_Common|BK_Lisa_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 3
+      "camp": 3,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Lisa",
+      "unk_7": 0,
+      "unk_8": 10304,
+      "unlockable": true
     },
     {
       "id": 1191,
@@ -207,7 +333,14 @@
       "audio_bank": "BK_Ellen|BK_CHR_Common|BK_Ellen_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 2
+      "camp": 2,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Ellen",
+      "unk_7": 0,
+      "unk_8": 10204,
+      "unlockable": true
     },
     {
       "id": 1201,
@@ -218,7 +351,14 @@
       "audio_bank": "BK_Harumasa|BK_CHR_Common|BK_Harumasa_VO",
       "unk_1": 0,
       "gender": 1,
-      "camp": 6
+      "camp": 6,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Harumasa",
+      "unk_7": 0,
+      "unk_8": 10603,
+      "unlockable": true
     },
     {
       "id": 1211,
@@ -229,7 +369,14 @@
       "audio_bank": "BK_Rina|BK_CHR_Common|BK_Rina_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 2
+      "camp": 2,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Rina",
+      "unk_7": 0,
+      "unk_8": 10203,
+      "unlockable": true
     },
     {
       "id": 1221,
@@ -240,7 +387,14 @@
       "audio_bank": "BK_Yanagi|BK_CHR_Common|BK_Yanagi_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 6
+      "camp": 6,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Yanagi",
+      "unk_7": 0,
+      "unk_8": 10602,
+      "unlockable": true
     },
     {
       "id": 1241,
@@ -251,7 +405,14 @@
       "audio_bank": "BK_ZhuYuan|BK_CHR_Common|BK_ZhuYuan_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 7
+      "camp": 7,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Zhuyuan",
+      "unk_7": 0,
+      "unk_8": 10701,
+      "unlockable": true
     },
     {
       "id": 1251,
@@ -262,7 +423,14 @@
       "audio_bank": "BK_QingYi|BK_CHR_Common|BK_QingYi_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 7
+      "camp": 7,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Qingyi",
+      "unk_7": 0,
+      "unk_8": 10702,
+      "unlockable": true
     },
     {
       "id": 1261,
@@ -273,7 +441,14 @@
       "audio_bank": "BK_JaneDoe|BK_CHR_Common|BK_JaneDoe_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 7
+      "camp": 7,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Janedoe",
+      "unk_7": 0,
+      "unk_8": 10703,
+      "unlockable": true
     },
     {
       "id": 1271,
@@ -284,7 +459,14 @@
       "audio_bank": "BK_Seth|BK_CHR_Common|BK_Seth_VO",
       "unk_1": 0,
       "gender": 1,
-      "camp": 7
+      "camp": 7,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Seth",
+      "unk_7": 0,
+      "unk_8": 10704,
+      "unlockable": true
     },
     {
       "id": 1281,
@@ -295,7 +477,14 @@
       "audio_bank": "BK_Clara|BK_CHR_Common|BK_Clara_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 4
+      "camp": 4,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Clara",
+      "unk_7": 0,
+      "unk_8": 10402,
+      "unlockable": true
     },
     {
       "id": 1291,
@@ -306,7 +495,14 @@
       "audio_bank": "BK_HugoVlad|BK_CHR_Common|BK_HugoVlad_VO",
       "unk_1": 0,
       "gender": 1,
-      "camp": 9
+      "camp": 9,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Hugovlad",
+      "unk_7": 0,
+      "unk_8": 10902,
+      "unlockable": true
     },
     {
       "id": 1301,
@@ -317,7 +513,14 @@
       "audio_bank": "BK_Brujas|BK_CHR_Common|BK_Brujas_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 5
+      "camp": 5,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Brujas",
+      "unk_7": 0,
+      "unk_8": 10505,
+      "unlockable": true
     },
     {
       "id": 1311,
@@ -328,7 +531,14 @@
       "audio_bank": "BK_Astra|BK_CHR_Common|BK_Astra_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 8
+      "camp": 8,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Astra",
+      "unk_7": 0,
+      "unk_8": 10801,
+      "unlockable": true
     },
     {
       "id": 1321,
@@ -339,7 +549,14 @@
       "audio_bank": "BK_Evelyn|BK_CHR_Common|BK_Evelyn_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 8
+      "camp": 8,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Evelyn",
+      "unk_7": 0,
+      "unk_8": 10802,
+      "unlockable": true
     },
     {
       "id": 1331,
@@ -350,7 +567,14 @@
       "audio_bank": "BK_Vivian|BK_CHR_Common|BK_Vivian_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 9
+      "camp": 9,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Vivian",
+      "unk_7": 0,
+      "unk_8": 10901,
+      "unlockable": true
     },
     {
       "id": 1341,
@@ -361,7 +585,14 @@
       "audio_bank": "BK_XiaoZhao|BK_CHR_Common|BK_XiaoZhao_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 12
+      "camp": 12,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "XiaoZhao",
+      "unk_7": 0,
+      "unk_8": 11203,
+      "unlockable": true
     },
     {
       "id": 1351,
@@ -372,7 +603,14 @@
       "audio_bank": "BK_Pulchra|BK_CHR_Common|BK_Pulchra_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 4
+      "camp": 4,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Pulchra",
+      "unk_7": 0,
+      "unk_8": 10406,
+      "unlockable": true
     },
     {
       "id": 1361,
@@ -383,7 +621,14 @@
       "audio_bank": "BK_Trigger|BK_CHR_Common|BK_Trigger_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 5
+      "camp": 5,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Trigger",
+      "unk_7": 0,
+      "unk_8": 10503,
+      "unlockable": true
     },
     {
       "id": 1371,
@@ -394,7 +639,14 @@
       "audio_bank": "BK_YiXuan|BK_CHR_Common|BK_YiXuan_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 10
+      "camp": 10,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Yixuan",
+      "unk_7": 0,
+      "unk_8": 11001,
+      "unlockable": true
     },
     {
       "id": 1381,
@@ -405,7 +657,14 @@
       "audio_bank": "",
       "unk_1": 0,
       "gender": 2,
-      "camp": 5
+      "camp": 5,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Silveranby",
+      "unk_7": 0,
+      "unk_8": 10502,
+      "unlockable": true
     },
     {
       "id": 1391,
@@ -416,7 +675,14 @@
       "audio_bank": "BK_Jufufu|BK_CHR_Common|BK_Jufufu_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 10
+      "camp": 10,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Jufufu",
+      "unk_7": 0,
+      "unk_8": 11003,
+      "unlockable": true
     },
     {
       "id": 1401,
@@ -427,7 +693,14 @@
       "audio_bank": "BK_Alice|BK_CHR_Common|BK_Alice_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 11
+      "camp": 11,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Alice",
+      "unk_7": 0,
+      "unk_8": 11102,
+      "unlockable": true
     },
     {
       "id": 1411,
@@ -438,7 +711,14 @@
       "audio_bank": "BK_Yuzuha|BK_CHR_Common|BK_Yuzuha_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 11
+      "camp": 11,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Yuzuha",
+      "unk_7": 0,
+      "unk_8": 11101,
+      "unlockable": true
     },
     {
       "id": 1421,
@@ -449,7 +729,14 @@
       "audio_bank": "BK_PanYinhu|BK_CHR_Common|BK_PanYinhu_VO",
       "unk_1": 0,
       "gender": 1,
-      "camp": 10
+      "camp": 10,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Panyinhu",
+      "unk_7": 0,
+      "unk_8": 11002,
+      "unlockable": true
     },
     {
       "id": 1431,
@@ -460,7 +747,14 @@
       "audio_bank": "BK_Zhenzhen|BK_CHR_Common|BK_Zhenzhen_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 10
+      "camp": 10,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Zhenzhen",
+      "unk_7": 0,
+      "unk_8": 11004,
+      "unlockable": true
     },
     {
       "id": 1441,
@@ -471,7 +765,14 @@
       "audio_bank": "BK_Norano|BK_CHR_Common|BK_Norano_VO",
       "unk_1": 0,
       "gender": 1,
-      "camp": 11
+      "camp": 11,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Norano",
+      "unk_7": 0,
+      "unk_8": 11104,
+      "unlockable": true
     },
     {
       "id": 1451,
@@ -482,7 +783,14 @@
       "audio_bank": "BK_Lucia|BK_CHR_Common|BK_Lucia_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 11
+      "camp": 11,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Lucia",
+      "unk_7": 0,
+      "unk_8": 11103,
+      "unlockable": true
     },
     {
       "id": 1461,
@@ -493,7 +801,14 @@
       "audio_bank": "BK_Seed|BK_CHR_Common|BK_Seed_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 5
+      "camp": 5,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Seed",
+      "unk_7": 0,
+      "unk_8": 10504,
+      "unlockable": true
     },
     {
       "id": 1471,
@@ -504,7 +819,14 @@
       "audio_bank": "BK_BanYue|BK_CHR_Common|BK_BanYue_VO",
       "unk_1": 0,
       "gender": 1,
-      "camp": 12
+      "camp": 12,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "BanYue",
+      "unk_7": 0,
+      "unk_8": 11202,
+      "unlockable": true
     },
     {
       "id": 1481,
@@ -515,7 +837,14 @@
       "audio_bank": "BK_Azural|BK_CHR_Common|BK_Azural_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 12
+      "camp": 12,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Azural",
+      "unk_7": 0,
+      "unk_8": 11201,
+      "unlockable": true
     },
     {
       "id": 1491,
@@ -526,7 +855,14 @@
       "audio_bank": "BK_Summer|BK_CHR_Common|BK_Summer_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 13
+      "camp": 13,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Summer",
+      "unk_7": 0,
+      "unk_8": 11301,
+      "unlockable": true
     },
     {
       "id": 1501,
@@ -537,7 +873,14 @@
       "audio_bank": "BK_Aria|BK_CHR_Common|BK_Aria_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 13
+      "camp": 13,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Aria",
+      "unk_7": 0,
+      "unk_8": 11302,
+      "unlockable": true
     },
     {
       "id": 1502,
@@ -548,7 +891,14 @@
       "audio_bank": "BK_Aria|BK_CHR_Common|BK_Aria_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Aria",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 1511,
@@ -559,7 +909,14 @@
       "audio_bank": "BK_NangongYu|BK_CHR_Common|BK_NangongYu_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 13
+      "camp": 13,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "NangongYu",
+      "unk_7": 0,
+      "unk_8": 11303,
+      "unlockable": true
     },
     {
       "id": 1521,
@@ -570,7 +927,14 @@
       "audio_bank": "BK_Cissia|BK_CHR_Common|BK_Cissia_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 7
+      "camp": 7,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Cissia",
+      "unk_7": 0,
+      "unk_8": 10705,
+      "unlockable": true
     },
     {
       "id": 1531,
@@ -581,7 +945,14 @@
       "audio_bank": "BK_SPBilly|BK_CHR_Common|BK_SPBilly_VO",
       "unk_1": 0,
       "gender": 1,
-      "camp": 1
+      "camp": 1,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "SPBilly",
+      "unk_7": 0,
+      "unk_8": 10105,
+      "unlockable": true
     },
     {
       "id": 1541,
@@ -592,7 +963,14 @@
       "audio_bank": "BK_Promeia|BK_CHR_Common|BK_Promeia_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 12
+      "camp": 12,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Promeia",
+      "unk_7": 0,
+      "unk_8": 11204,
+      "unlockable": true
     },
     {
       "id": 1551,
@@ -603,7 +981,14 @@
       "audio_bank": "BK_Pyrois|BK_CHR_Common|BK_Pyrois_VO",
       "unk_1": 0,
       "gender": 1,
-      "camp": 15
+      "camp": 15,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Pyrois",
+      "unk_7": 0,
+      "unk_8": 11501,
+      "unlockable": true
     },
     {
       "id": 1561,
@@ -614,7 +999,14 @@
       "audio_bank": "BK_Velina|BK_CHR_Common|BK_Velina_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 16
+      "camp": 16,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Velina",
+      "unk_7": 0,
+      "unk_8": 11601,
+      "unlockable": true
     },
     {
       "id": 1571,
@@ -625,7 +1017,14 @@
       "audio_bank": "BK_Norma|BK_CHR_Common|BK_Norma_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 16
+      "camp": 16,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Norma",
+      "unk_7": 0,
+      "unk_8": 11602,
+      "unlockable": true
     },
     {
       "id": 1581,
@@ -636,7 +1035,14 @@
       "audio_bank": "BK_Remielle|BK_CHR_Common|BK_Remielle_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 17
+      "camp": 17,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Remielle",
+      "unk_7": 0,
+      "unk_8": 11701,
+      "unlockable": true
     },
     {
       "id": 1582,
@@ -647,7 +1053,14 @@
       "audio_bank": "BK_Remielle|BK_CHR_Common|BK_Remielle_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 11
+      "camp": 11,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Remielle",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 1591,
@@ -658,7 +1071,14 @@
       "audio_bank": "BK_Sigrid|BK_CHR_Common|BK_Sigrid_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 16
+      "camp": 16,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Sigrid",
+      "unk_7": 0,
+      "unk_8": 11603,
+      "unlockable": true
     },
     {
       "id": 1601,
@@ -669,7 +1089,14 @@
       "audio_bank": "BK_Sunbringer|BK_CHR_Common|BK_Sunbringer_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 12
+      "camp": 12,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Sunbringer",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": true
     },
     {
       "id": 1602,
@@ -680,7 +1107,14 @@
       "audio_bank": "BK_Lindverne|BK_CHR_Common|BK_Lindverne_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 12
+      "camp": 12,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Lindverne",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 1603,
@@ -691,7 +1125,14 @@
       "audio_bank": "BK_CampusLead|BK_CHR_Common|BK_CampusLead_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 12
+      "camp": 12,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "CampusLead",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 1604,
@@ -702,7 +1143,14 @@
       "audio_bank": "BK_Lindverne|BK_CHR_Common|BK_Lindverne_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 12
+      "camp": 12,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Lindverne",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 1611,
@@ -713,7 +1161,14 @@
       "audio_bank": "BK_Claret|BK_CHR_Common|BK_Claret_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 16
+      "camp": 16,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Claret",
+      "unk_7": 0,
+      "unk_8": 11604,
+      "unlockable": true
     },
     {
       "id": 1621,
@@ -724,7 +1179,14 @@
       "audio_bank": "BK_Pryce|BK_CHR_Common|BK_Pryce_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 16
+      "camp": 16,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Pryce",
+      "unk_7": 0,
+      "unk_8": 11605,
+      "unlockable": true
     },
     {
       "id": 1631,
@@ -735,7 +1197,14 @@
       "audio_bank": "BK_Severian|BK_CHR_Common|BK_Severian_VO",
       "unk_1": 0,
       "gender": 1,
-      "camp": 7
+      "camp": 7,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Severian",
+      "unk_7": 0,
+      "unk_8": 10706,
+      "unlockable": true
     },
     {
       "id": 1641,
@@ -746,7 +1215,14 @@
       "audio_bank": "BK_Pheony|BK_CHR_Common|BK_Pheony_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 12
+      "camp": 12,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Pheony",
+      "unk_7": 0,
+      "unk_8": 11205,
+      "unlockable": true
     },
     {
       "id": 2011,
@@ -757,7 +1233,14 @@
       "audio_bank": "BK_Wise",
       "unk_1": 0,
       "gender": 1,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Wise",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 2021,
@@ -768,7 +1251,14 @@
       "audio_bank": "BK_Belle",
       "unk_1": 0,
       "gender": 2,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Belle",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 2031,
@@ -779,7 +1269,14 @@
       "audio_bank": "BK_MazingerGoldenBomb",
       "unk_1": 0,
       "gender": 0,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "MazingerGoldenBomb",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 2032,
@@ -790,7 +1287,14 @@
       "audio_bank": "BK_MazingerGoldenBomb",
       "unk_1": 0,
       "gender": 0,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "MazingerGoldenBomb",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 2033,
@@ -801,7 +1305,14 @@
       "audio_bank": "BK_MazingerGoldenBomb",
       "unk_1": 0,
       "gender": 0,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "MazingerGoldenBomb",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 2034,
@@ -812,7 +1323,14 @@
       "audio_bank": "BK_MazingerGoldenBomb",
       "unk_1": 0,
       "gender": 0,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "MazingerGoldenBomb",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 2035,
@@ -823,7 +1341,14 @@
       "audio_bank": "BK_MazingerGoldenBomb",
       "unk_1": 0,
       "gender": 0,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "MazingerGoldenBomb",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 2036,
@@ -834,7 +1359,14 @@
       "audio_bank": "BK_Eous",
       "unk_1": 0,
       "gender": 0,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Eous",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 2037,
@@ -845,7 +1377,14 @@
       "audio_bank": "BK_Eous",
       "unk_1": 0,
       "gender": 0,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Eous",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 2038,
@@ -856,7 +1395,14 @@
       "audio_bank": "BK_Eous",
       "unk_1": 0,
       "gender": 0,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Eous",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 2039,
@@ -867,7 +1413,14 @@
       "audio_bank": "BK_Butler",
       "unk_1": 0,
       "gender": 0,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Butler",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 2041,
@@ -878,7 +1431,14 @@
       "audio_bank": "BK_Zhenzhen",
       "unk_1": 0,
       "gender": 2,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Zhenzhen",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 2042,
@@ -889,7 +1449,14 @@
       "audio_bank": "",
       "unk_1": 0,
       "gender": 0,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 2043,
@@ -900,7 +1467,14 @@
       "audio_bank": "",
       "unk_1": 0,
       "gender": 0,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 2044,
@@ -911,7 +1485,14 @@
       "audio_bank": "",
       "unk_1": 0,
       "gender": 0,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 2051,
@@ -922,7 +1503,14 @@
       "audio_bank": "BK_Wise",
       "unk_1": 0,
       "gender": 1,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Wise",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 2061,
@@ -933,7 +1521,14 @@
       "audio_bank": "BK_Belle",
       "unk_1": 0,
       "gender": 2,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Belle",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 2071,
@@ -944,7 +1539,14 @@
       "audio_bank": "BK_Summer|BK_CHR_Common|BK_Summer_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 7
+      "camp": 7,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Summer",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 2081,
@@ -955,7 +1557,14 @@
       "audio_bank": "BK_Summer|BK_CHR_Common|BK_Summer_VO",
       "unk_1": 0,
       "gender": 0,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "YoKaiVessel",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 2091,
@@ -966,7 +1575,14 @@
       "audio_bank": "BK_Summer|BK_CHR_Common|BK_Summer_VO",
       "unk_1": 0,
       "gender": 0,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "YoKaiHayyot",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 2101,
@@ -977,7 +1593,14 @@
       "audio_bank": "BK_Wise",
       "unk_1": 0,
       "gender": 1,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Wise",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 2111,
@@ -988,7 +1611,14 @@
       "audio_bank": "BK_Belle",
       "unk_1": 0,
       "gender": 2,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Belle",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 2121,
@@ -999,7 +1629,14 @@
       "audio_bank": "BK_Pyrois|BK_CHR_Common|BK_Pyrois_VO",
       "unk_1": 0,
       "gender": 1,
-      "camp": 7
+      "camp": 7,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Pyrois",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 2131,
@@ -1010,7 +1647,14 @@
       "audio_bank": "BK_Claret|BK_CHR_Common|BK_Claret_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 12
+      "camp": 12,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Claret",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 2141,
@@ -1021,7 +1665,14 @@
       "audio_bank": "BK_Pryce|BK_CHR_Common|BK_Pryce_VO",
       "unk_1": 0,
       "gender": 2,
-      "camp": 13
+      "camp": 13,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Pryce",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 2151,
@@ -1032,7 +1683,14 @@
       "audio_bank": "BK_HACMecha",
       "unk_1": 0,
       "gender": 0,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "HACMecha",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 8010,
@@ -1043,7 +1701,14 @@
       "audio_bank": "BK_Pyrois|BK_CHR_Common|BK_Pyrois_VO",
       "unk_1": 0,
       "gender": 0,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "Pyrois",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 8013,
@@ -1054,7 +1719,14 @@
       "audio_bank": "BK_Summer|BK_CHR_Common|BK_Summer_VO",
       "unk_1": 0,
       "gender": 0,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "YoKaiHereticHunter",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 8014,
@@ -1065,7 +1737,14 @@
       "audio_bank": "BK_Summer|BK_CHR_Common|BK_Summer_VO",
       "unk_1": 0,
       "gender": 0,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "YoKai",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 8015,
@@ -1076,7 +1755,14 @@
       "audio_bank": "BK_Summer|BK_CHR_Common|BK_Summer_VO",
       "unk_1": 0,
       "gender": 0,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "YoKaiCovenantGuardian",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 8016,
@@ -1087,7 +1773,14 @@
       "audio_bank": "BK_Summer|BK_CHR_Common|BK_Summer_VO",
       "unk_1": 0,
       "gender": 0,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "YoKaiChelonethid",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 8017,
@@ -1098,7 +1791,14 @@
       "audio_bank": "BK_Summer|BK_CHR_Common|BK_Summer_VO",
       "unk_1": 0,
       "gender": 0,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "YoKaiSobek",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 8018,
@@ -1109,7 +1809,14 @@
       "audio_bank": "BK_Summer|BK_CHR_Common|BK_Summer_VO",
       "unk_1": 0,
       "gender": 0,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "YoKaiMutant",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 8019,
@@ -1120,7 +1827,14 @@
       "audio_bank": "BK_Summer|BK_CHR_Common|BK_Summer_VO",
       "unk_1": 0,
       "gender": 0,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "YoKaiNamelessOne",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 8020,
@@ -1131,7 +1845,14 @@
       "audio_bank": "BK_Summer|BK_CHR_Common|BK_Summer_VO",
       "unk_1": 0,
       "gender": 0,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "YoKaiGraymaneCenturion",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 8021,
@@ -1142,7 +1863,14 @@
       "audio_bank": "BK_Summer|BK_CHR_Common|BK_Summer_VO",
       "unk_1": 0,
       "gender": 0,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "YoKaiDubiousHero",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 8022,
@@ -1153,7 +1881,14 @@
       "audio_bank": "BK_Summer|BK_CHR_Common|BK_Summer_VO",
       "unk_1": 0,
       "gender": 0,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "YoKaiThracian",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 8023,
@@ -1164,7 +1899,14 @@
       "audio_bank": "BK_Summer|BK_CHR_Common|BK_Summer_VO",
       "unk_1": 0,
       "gender": 0,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "YoKaiHacker",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 8024,
@@ -1175,7 +1917,14 @@
       "audio_bank": "BK_Summer|BK_CHR_Common|BK_Summer_VO",
       "unk_1": 0,
       "gender": 0,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "YoKaiGoldenBomb",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     },
     {
       "id": 8025,
@@ -1186,7 +1935,14 @@
       "audio_bank": "BK_Summer|BK_CHR_Common|BK_Summer_VO",
       "unk_1": 0,
       "gender": 0,
-      "camp": 0
+      "camp": 0,
+      "unk_3": 0,
+      "unk_4": 0,
+      "unk_5": 0,
+      "unk_6": "YoKaiTyrantPompey",
+      "unk_7": 0,
+      "unk_8": 0,
+      "unlockable": false
     }
   ]
 }

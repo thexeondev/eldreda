@@ -2,15 +2,16 @@ const std = @import("std");
 const mem = std.mem;
 
 pub const AvatarBase = struct {
-    pub const Table = TemplateTb(AvatarBase, "AvatarBaseTemplateTb");
+    pub const Table = TemplateTb(AvatarBase, "AvatarBaseTemplateTb", .id);
     pub const table: Table = .init();
 
     id: u32,
     audio_event_replace_param: String,
+    unlockable: bool,
 };
 
 pub const UnlockConfig = struct {
-    pub const Table = TemplateTb(UnlockConfig, "UnlockConfigTemplateTb");
+    pub const Table = TemplateTb(UnlockConfig, "UnlockConfigTemplateTb", .id);
     pub const table: Table = .init();
 
     id: i32,
@@ -21,7 +22,11 @@ pub const String = enum(u32) {
     _,
 };
 
-fn TemplateTb(comptime Template: type, comptime file_name: []const u8) type {
+fn TemplateTb(
+    comptime Template: type,
+    comptime file_name: []const u8,
+    comptime key_field: @EnumLiteral(),
+) type {
     const struct_info = @typeInfo(Template).@"struct";
     const field_names = struct_info.field_names;
 
@@ -61,6 +66,8 @@ fn TemplateTb(comptime Template: type, comptime file_name: []const u8) type {
         count: u32,
         arrays: Arrays,
         string_table: []const u8,
+        /// Biased towards cheap linear search.
+        index_by_key: std.array_hash_map.Custom(void, void, void, false),
 
         pub const Field = std.meta.FieldEnum(Template);
 
@@ -86,7 +93,36 @@ fn TemplateTb(comptime Template: type, comptime file_name: []const u8) type {
                 .count = item_count,
                 .arrays = arrays,
                 .string_table = data[string_table_offset..],
+                .index_by_key = .{ .entries = .{
+                    .bytes = undefined,
+                    .len = item_count,
+                    .capacity = item_count,
+                } },
             };
+        }
+
+        const Key = @FieldType(Template, @tagName(key_field));
+
+        pub fn getIndexByKey(tb: *const Tb, key: Key) ?u32 {
+            const Adapter = struct {
+                keys: []const Key,
+
+                pub fn eql(context: @This(), a: Key, b_void: void, b_map_index: usize) bool {
+                    _ = b_void;
+                    return a == context.keys[b_map_index];
+                }
+
+                pub fn hash(context: @This(), a: Key) u32 {
+                    _ = context;
+                    return @bitCast(a);
+                }
+            };
+
+            const adapter: Adapter = .{ .keys = tb.items(key_field) };
+            if (tb.index_by_key.getIndexAdapted(key, adapter)) |index_usize|
+                return @intCast(index_usize);
+
+            return null;
         }
 
         pub fn items(tb: *const Tb, comptime which: Field) @FieldType(Arrays, @tagName(which)) {

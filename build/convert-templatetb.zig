@@ -42,6 +42,7 @@ const template_tb_list: []const struct { []const u8, type } = &.{
 const AvatarBaseTemplate = struct {
     id: u32,
     audio_event_replace_param: []const u8,
+    unlockable: bool,
 };
 
 const UnlockConfigTemplate = struct {
