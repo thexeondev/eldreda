@@ -26,6 +26,7 @@ const build_mode_has_safety = switch (builtin.optimize) {
 
 const default_http_address = "127.0.0.1:12401";
 const default_gate_address = "127.0.0.1:20501";
+const default_public_url_prefix = "http://127.0.0.1:12401";
 const default_storage_path = "eldreda-storage";
 const sdk_account_storage_filename = "sdk_accounts.bin";
 const default_config_path = "eldreda.zon";
@@ -51,12 +52,14 @@ fn usage(io: Io) noreturn {
         \\  --config-path          Path to the configuration file; default is {q}
         \\  --http-listen-address  Address for dispatch and sdk service; default is {q}
         \\  --gate-listen-address  Address for the game gateway service; default is {q}
+        \\  --public-url-prefix    Prefix for publicly shared http URLs; default is {q}
         \\  --storage-path         Path to storage directory; default is {q}
         \\
     , .{
         default_config_path,
         default_http_address,
         default_gate_address,
+        default_public_url_prefix,
         default_storage_path,
     })) catch {};
     process.exit(0);
@@ -81,6 +84,7 @@ pub fn main(init: process.Init.Minimal) !void {
     var http_address = comptime IpAddress.parseLiteral(default_http_address) catch unreachable;
     var gate_address = comptime IpAddress.parseLiteral(default_gate_address) catch unreachable;
     var storage_path: []const u8 = default_storage_path;
+    var public_url_prefix: []const u8 = default_public_url_prefix;
 
     const args_slice = try init.args.toSlice(arena);
     var args_i: usize = 1;
@@ -95,6 +99,8 @@ pub fn main(init: process.Init.Minimal) !void {
         } else if (mem.cutPrefix(u8, arg, "--gate-listen-address=")) |address_string| {
             gate_address = IpAddress.parseLiteral(address_string) catch
                 fatal("bad --gate-listen-address specified: {q}", .{address_string});
+        } else if (mem.cutPrefix(u8, arg, "--public-url-prefix=")) |prefix_string| {
+            public_url_prefix = prefix_string;
         } else if (mem.cutPrefix(u8, arg, "--storage-path=")) |path_string| {
             storage_path = path_string;
         } else {
@@ -116,7 +122,7 @@ pub fn main(init: process.Init.Minimal) !void {
         .arena = arena,
         .region_name = "eldreda",
         .region_title = "Eldreda",
-        .outer_url_prefix = "http://127.0.0.1:12401",
+        .public_url_prefix = public_url_prefix,
     });
 
     const query_gateway_response = try eldreda.dispatch.buildQueryGatewayResponse(.{

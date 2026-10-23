@@ -12,7 +12,7 @@ pub const QueryDispatchResponseOptions = struct {
     arena: Allocator,
     region_name: []const u8,
     region_title: []const u8,
-    outer_url_prefix: []const u8,
+    public_url_prefix: []const u8,
 };
 
 pub fn buildQueryDispatchResponse(
@@ -20,7 +20,7 @@ pub fn buildQueryDispatchResponse(
 ) Allocator.Error![]const u8 {
     const gpa = options.gpa;
 
-    const dispatch_url = try gpa.print("{s}/query_gateway", .{options.outer_url_prefix});
+    const dispatch_url = try gpa.print("{s}/query_gateway", .{options.public_url_prefix});
     defer gpa.free(dispatch_url);
 
     const response = .{
