@@ -116,18 +116,14 @@ fn serveConnection(
         .sub_path = player_file_path,
         .diagnostics = &player_load_diagnostics,
     }) catch |err| switch (err) {
+        error.Canceled => |e| return e,
         error.FileNotFound => {
             player.initDefaults();
             try player.saveToFile(io, server.storage.player_dir, player_file_path);
         },
-        error.Canceled => |e| return e,
         error.CheckDiagnostics => return log.err(
             "failed to load save file for player with uid {d}:\n{f}",
             .{ client.player_uid, &player_load_diagnostics },
-        ),
-        else => |e| return log.err(
-            "failed to read save file {q} due to I/O error: {t}",
-            .{ player_file_path, e },
         ),
     };
 

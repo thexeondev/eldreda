@@ -198,6 +198,9 @@ pub fn saveToFile(player: *Player, io: Io, dir: Io.Dir, sub_path: []const u8) !v
 }
 
 pub const LoadDiagnostics = union(enum) {
+    /// `error.FileNotFound` and `error.Canceled` are unreachable
+    /// and are instead propagated.
+    filesystem: FileSystemError,
     file_has_trailing_garbage: void,
     file_version_mismatch: struct { encountered: u32 },
     limit_exceeded: struct {
@@ -206,16 +209,23 @@ pub const LoadDiagnostics = union(enum) {
         encountered: u32,
     },
 
+    pub const FileSystemError = Io.File.OpenError ||
+        Io.File.Reader.Error ||
+        Io.File.Reader.SizeError ||
+        error{EarlyEos};
+
     pub fn format(diag: *const LoadDiagnostics, writer: *Io.Writer) !void {
         switch (diag.*) {
+            .filesystem => |err| return writer.print(
+                "filesystem failure: {t}",
+                .{err},
+            ),
             .file_has_trailing_garbage => return writer.writeAll(
                 "save file is likely corrupted (trailing garbage encountered)",
             ),
             .file_version_mismatch => |version| return writer.print(
                 "save file version mismatch, expected: {d}, got: {d}",
-                .{
-                    Header.current_version, version.encountered,
-                },
+                .{ Header.current_version, version.encountered },
             ),
             .limit_exceeded => |exceeded| return writer.print(
                 "limit of {s} exceeded ({d}/{d})",
@@ -229,8 +239,25 @@ pub const LoadDiagnostics = union(enum) {
         comptime cause: @EnumLiteral(),
         details: @FieldType(LoadDiagnostics, @tagName(cause)),
     ) error{CheckDiagnostics} {
+        comptime assert(cause != .filesystem); // use `fileSystem` instead
+
         ptr.* = @unionInit(LoadDiagnostics, @tagName(cause), details);
         return error.CheckDiagnostics;
+    }
+
+    fn fileSystem(
+        ptr: *LoadDiagnostics,
+        err: FileSystemError,
+    ) LoadFromFileError {
+        switch (err) {
+            // cancelation must be propagated rather than logged.
+            error.Canceled => |e| return e,
+            error.FileNotFound => |e| return e,
+            else => |e| {
+                ptr.* = .{ .filesystem = e };
+                return error.CheckDiagnostics;
+            },
+        }
     }
 };
 
@@ -241,11 +268,19 @@ pub const LoadFromFileOptions = struct {
 };
 
 pub const LoadFromFileError = error{
+    FileNotFound,
     CheckDiagnostics,
-} || Io.File.OpenError || Io.File.Reader.Error || Io.File.Reader.SizeError;
+} || Io.Cancelable;
 
-pub fn loadFromFile(player: *Player, io: Io, options: LoadFromFileOptions) !void {
-    const file = try options.dir.openFile(io, options.sub_path, .{});
+pub fn loadFromFile(
+    player: *Player,
+    io: Io,
+    options: LoadFromFileOptions,
+) LoadFromFileError!void {
+    const diag = options.diagnostics;
+
+    const file = options.dir.openFile(io, options.sub_path, .{}) catch |err|
+        return diag.fileSystem(err);
     defer file.close(io);
 
     var read_buffer: [1024]u8 = undefined;
@@ -253,11 +288,9 @@ pub fn loadFromFile(player: *Player, io: Io, options: LoadFromFileOptions) !void
 
     var file_reader = file.reader(io, &read_buffer);
     const header = file_reader.interface.takeStruct(Header, .little) catch |err| switch (err) {
-        error.EndOfStream => return error.EarlyEos,
-        error.ReadFailed => return file_reader.err.?,
+        error.EndOfStream => return diag.fileSystem(error.EarlyEos),
+        error.ReadFailed => return diag.fileSystem(file_reader.err.?),
     };
-
-    const diag = options.diagnostics;
 
     if (header.file_version != Header.current_version)
         return diag.fail(.file_version_mismatch, .{ .encountered = header.file_version });
@@ -277,13 +310,13 @@ pub fn loadFromFile(player: *Player, io: Io, options: LoadFromFileOptions) !void
     vecs.appendAssumeCapacity(@ptrCast(player.avatars.keys()));
 
     file_reader.interface.readVecAll(vecs.items) catch |err| switch (err) {
-        error.EndOfStream => return error.EarlyEos,
-        error.ReadFailed => return file_reader.err.?,
+        error.EndOfStream => return diag.fileSystem(error.EarlyEos),
+        error.ReadFailed => return diag.fileSystem(file_reader.err.?),
     };
 
     // `Io.File.Reader.atEnd` incorrectly returns `false`
     // because the "end" wasn't observed by any read functions,
     // since we're reading vectors of exact sizes.
-    if (file_reader.pos < try file_reader.getSize())
-        return diag.fail(.file_has_trailing_garbage, {});
+    const file_size = file_reader.getSize() catch |err| return diag.fileSystem(err);
+    if (file_reader.pos < file_size) return diag.fail(.file_has_trailing_garbage, {});
 }
