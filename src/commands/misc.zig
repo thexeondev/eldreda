@@ -15,8 +15,8 @@ pub fn GetMiscDataCsReq(session: *Session) !void {
                 .unlocked_list = templates.UnlockConfig.table.items(.id),
             },
             .post_girl = .{
-                .show_post_girl_id_list = &.{3510023},
-                .post_girl_item_list = &.{.{ .id = 3510023 }},
+                .show_post_girl_id_list = &.{3510060},
+                .post_girl_item_list = &.{.{ .id = 3510060 }},
             },
             .business_card = .{},
             .player_accessory = .{ .control_guise_avatar_id = 1601 },
