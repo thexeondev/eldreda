@@ -17,6 +17,14 @@ pub const UnlockConfig = struct {
     id: i32,
 };
 
+pub const Weapon = struct {
+    pub const Table = TemplateTb(Weapon, "WeaponTemplateTb", .id);
+    pub const table: Table = .init();
+
+    id: u32,
+    weapon_name: String,
+};
+
 pub const String = enum(u32) {
     empty = std.math.maxInt(u32),
     _,

@@ -16,8 +16,11 @@ comptime {
         @compileError("non-little-endian machines are not supported");
 }
 
+avatars: Avatar.List,
+weapons: Weapon.List,
+
 pub const Header = extern struct {
-    pub const current_version: u32 = 1;
+    pub const current_version: u32 = 2;
 
     comptime {
         assert(hasUniqueRepresentation(@This()));
@@ -25,6 +28,8 @@ pub const Header = extern struct {
 
     file_version: u32,
     avatar_count: u32,
+    weapon_count: u32,
+    weapon_uid_counter: u32,
 };
 
 pub const Avatar = struct {
@@ -169,11 +174,96 @@ pub const Avatar = struct {
     };
 };
 
-avatars: Avatar.List,
+pub const Weapon = struct {
+    uid_maybe: Uid.Optional,
+    bits: Bits,
+
+    pub const count_max: usize = 2_000;
+
+    pub const Bits = extern struct {
+        id: Id,
+
+        comptime {
+            assert(hasUniqueRepresentation(@This()));
+        }
+    };
+
+    pub const List = struct {
+        count: u32,
+        uid_counter: u32,
+        bits_buffer: [count_max]Bits,
+        uids_buffer: [count_max]Uid,
+
+        pub const empty: List = .{
+            .count = 0,
+            .uid_counter = 0,
+            .bits_buffer = undefined,
+            .uids_buffer = undefined,
+        };
+
+        pub fn uids(list: *List) []Uid {
+            return list.uids_buffer[0..list.count];
+        }
+
+        pub fn bits(list: *List) []Bits {
+            return list.bits_buffer[0..list.count];
+        }
+
+        pub fn add(list: *List, weapon: Weapon) error{NoSpaceLeft}!Uid {
+            assert(weapon.uid_maybe == .none); // uid is not known before `add`
+
+            if (list.count == count_max) return error.NoSpaceLeft;
+            errdefer comptime unreachable;
+
+            const index = list.count;
+            defer list.count += 1;
+
+            list.uid_counter += 1;
+            const uid: Uid = @fromBackingInt(list.uid_counter);
+
+            list.uids_buffer[index] = uid;
+            list.bits_buffer[index] = weapon.bits;
+
+            return uid;
+        }
+    };
+
+    pub const Id = enum(u32) {
+        _,
+
+        pub fn fromInt(id_int: u32) ?Id {
+            if (templates.Weapon.table.getIndexByKey(id_int)) |_|
+                return @fromBackingInt(id_int);
+
+            return null;
+        }
+    };
+
+    pub const Uid = enum(u32) {
+        _,
+
+        pub const Optional = enum(u32) {
+            none = 0,
+            _,
+
+            pub fn wrap(uid: Uid) Optional {
+                return @fromBackingInt(@backingInt(uid));
+            }
+
+            pub fn unwrap(uid_maybe: Optional) ?Uid {
+                return switch (uid_maybe) {
+                    .none => null,
+                    else => |uid| @fromBackingInt(@backingInt(uid)),
+                };
+            }
+        };
+    };
+};
 
 pub fn initDefaults(player: *Player) void {
     player.* = .{
         .avatars = .empty,
+        .weapons = .empty,
     };
 
     const avatar_bits_maxed_out: Avatar.Bits = .{
@@ -193,20 +283,35 @@ pub fn initDefaults(player: *Player) void {
 
         assert(!result.found_existing);
     }
+
+    for (templates.Weapon.table.items(.id)) |id_int| {
+        const id = Weapon.Id.fromInt(id_int) orelse continue;
+
+        _ = player.weapons.add(.{
+            .uid_maybe = .none,
+            .bits = .{ .id = id },
+        }) catch |err| switch (err) {
+            error.NoSpaceLeft => unreachable,
+        };
+    }
 }
 
 pub fn saveToFile(player: *Player, io: Io, dir: Io.Dir, sub_path: []const u8) !void {
-    var vecs_buffer: [3][]const u8 = undefined;
+    var vecs_buffer: [5][]const u8 = undefined;
     var vecs: std.ArrayList([]const u8) = .initBuffer(&vecs_buffer);
 
     const header: Header = .{
         .file_version = Header.current_version,
         .avatar_count = player.avatars.count,
+        .weapon_count = player.weapons.count,
+        .weapon_uid_counter = player.weapons.uid_counter,
     };
 
     vecs.appendAssumeCapacity(@ptrCast(&header));
     vecs.appendAssumeCapacity(@ptrCast(player.avatars.bits()));
     vecs.appendAssumeCapacity(@ptrCast(player.avatars.ids()));
+    vecs.appendAssumeCapacity(@ptrCast(player.weapons.bits()));
+    vecs.appendAssumeCapacity(@ptrCast(player.weapons.uids()));
 
     var af = try dir.createFileAtomic(io, sub_path, .{ .replace = true });
     defer af.deinit(io);
@@ -324,12 +429,21 @@ pub fn loadFromFile(
             .encountered = header.avatar_count,
         });
 
-    var vecs_buffer: [2][]u8 = undefined;
+    if (header.weapon_count > Weapon.count_max)
+        return diag.fail(.limit_exceeded, .{
+            .name = "weapons",
+            .limit = Weapon.count_max,
+            .encountered = header.weapon_count,
+        });
+
+    var vecs_buffer: [4][]u8 = undefined;
     var vecs: std.ArrayList([]u8) = .initBuffer(&vecs_buffer);
 
     player.avatars.count = header.avatar_count;
     vecs.appendAssumeCapacity(@ptrCast(player.avatars.bits()));
     vecs.appendAssumeCapacity(@ptrCast(player.avatars.ids()));
+    vecs.appendAssumeCapacity(@ptrCast(player.weapons.bits()));
+    vecs.appendAssumeCapacity(@ptrCast(player.weapons.uids()));
 
     file_reader.interface.readVecAll(vecs.items) catch |err| switch (err) {
         error.EndOfStream => return diag.fileSystem(error.EarlyEos),

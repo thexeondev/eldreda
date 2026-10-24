@@ -37,6 +37,7 @@ pub fn main(init: process.Init) !void {
 const template_tb_list: []const struct { []const u8, type } = &.{
     .{ "AvatarBaseTemplateTb", AvatarBaseTemplate },
     .{ "UnlockConfigTemplateTb", UnlockConfigTemplate },
+    .{ "WeaponTemplateTb", WeaponTemplate },
 };
 
 const AvatarBaseTemplate = struct {
@@ -47,6 +48,11 @@ const AvatarBaseTemplate = struct {
 
 const UnlockConfigTemplate = struct {
     id: i32,
+};
+
+const WeaponTemplate = struct {
+    id: u32,
+    weapon_name: []const u8,
 };
 
 fn TemplateTb(comptime Template: type) type {

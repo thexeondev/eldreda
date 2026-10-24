@@ -41,3 +41,13 @@ pub fn avatarInfo(out: *gen.AvatarInfo, avatar: Player.Avatar) void {
         .skill_type_level = &skills,
     };
 }
+
+pub fn weaponInfo(out: *gen.WeaponInfo, weapon: Player.Weapon) void {
+    out.* = .{
+        .uid = @backingInt(weapon.uid_maybe.unwrap().?),
+        .id = @backingInt(weapon.bits.id),
+        .level = 60,
+        .star = 5,
+        .refine_level = 1,
+    };
+}
