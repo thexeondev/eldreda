@@ -42,17 +42,49 @@ const template_tb_list: []const struct { []const u8, type } = &.{
 
 const AvatarBaseTemplate = struct {
     id: u32,
-    audio_event_replace_param: []const u8,
+    audio_event_replace_param: String,
     unlockable: bool,
+
+    // TODO: bonus points for build/compile-fbs.zig
+    const Fbs = struct {
+        id: fbs.Int(u32),
+        code_name: fbs.Discard,
+        name: fbs.Discard,
+        full_name: fbs.Discard,
+        audio_event_replace_param: fbs.String,
+        audio_bank: fbs.Discard,
+        hit_types: fbs.Discard,
+        element_types: fbs.Discard,
+        unk_1: fbs.Discard,
+        gender: fbs.Discard,
+        camp: fbs.Discard,
+        unk_2: fbs.Discard,
+        unk_3: fbs.Discard,
+        unk_4: fbs.Discard,
+        unk_5: fbs.Discard,
+        unk_6: fbs.Discard,
+        unk_7: fbs.Discard,
+        unk_8: fbs.Discard,
+        unlockable: fbs.Bool,
+    };
 };
 
 const UnlockConfigTemplate = struct {
     id: i32,
+
+    const Fbs = struct {
+        id: fbs.Int(i32),
+    };
 };
 
 const WeaponTemplate = struct {
     id: u32,
-    weapon_name: []const u8,
+    weapon_name: String,
+
+    const Fbs = struct {
+        id: fbs.Int(u32),
+        weapon_name: fbs.String,
+    };
 };
 
 fn TemplateTb(comptime Template: type) type {
@@ -77,28 +109,18 @@ fn convertTemplateTbs(io: Io, gpa: Allocator, inp_dir: Io.Dir, out_dir: Io.Dir) 
     defer arena_instance.deinit();
     const arena = arena_instance.allocator();
 
-    var inp_read_buffer: [4096]u8 = undefined;
     var out_write_buffer: [4096]u8 = undefined;
 
     inline for (template_tb_list) |template_tb_entry| {
         defer _ = arena_instance.reset(.retain_capacity);
         const file_name_stem, const Template = template_tb_entry;
-        const file_name_json = file_name_stem ++ ".json";
+        const file_name_bin = file_name_stem ++ ".bin";
 
-        const inp_file = try inp_dir.openFile(io, file_name_json, .{});
-        defer inp_file.close(io);
-        var inp_file_reader = inp_file.reader(io, &inp_read_buffer);
+        const inp_bytes = try inp_dir.readFileAlloc(io, file_name_bin, gpa, .unlimited);
+        defer gpa.free(inp_bytes);
 
-        var json_reader: std.json.Reader = .init(arena, &inp_file_reader.interface);
-
-        const parsed = try std.json.parseFromTokenSourceLeaky(
-            TemplateTb(Template),
-            arena,
-            &json_reader,
-            .{
-                .ignore_unknown_fields = true,
-            },
-        );
+        const Root = struct { data: []const fbs.Table(Template.Fbs) };
+        const parsed = try parseFlatbuffer(Root, arena, inp_bytes);
 
         const out_file = try out_dir.createFile(io, file_name_stem, .{});
         defer out_file.close(io);
@@ -107,6 +129,7 @@ fn convertTemplateTbs(io: Io, gpa: Allocator, inp_dir: Io.Dir, out_dir: Io.Dir) 
         convertTemplateList(
             arena,
             Template,
+            inp_bytes,
             parsed.data,
             &out_file_writer.interface,
         ) catch |err| switch (err) {
@@ -114,6 +137,108 @@ fn convertTemplateTbs(io: Io, gpa: Allocator, inp_dir: Io.Dir, out_dir: Io.Dir) 
             else => |e| return e,
         };
     }
+}
+
+const fbs = struct {
+    pub fn Table(comptime S: type) type {
+        return struct {
+            base: usize,
+            fields: Struct,
+
+            pub const Struct = S;
+        };
+    }
+
+    pub const Discard = struct {
+        offset: u16,
+    };
+
+    pub fn Int(comptime T: type) type {
+        return struct {
+            offset: u16,
+
+            pub fn read(int: @This(), buffer: []const u8, table_base: usize) T {
+                if (int.offset == 0) return 0;
+                const ptr = buffer[table_base + int.offset ..][0..@sizeOf(T)];
+                return mem.readInt(T, ptr, .little);
+            }
+        };
+    }
+
+    pub const String = struct {
+        offset: u16,
+
+        pub fn read(string: *const fbs.String, buffer: []const u8, table_base: usize) []const u8 {
+            if (string.offset == 0) return "";
+
+            const payload_offset_ptr = buffer[table_base + string.offset ..][0..4];
+            const payload_offset = mem.readInt(i32, payload_offset_ptr, .little);
+
+            const payload =
+                buffer[@intCast(@as(isize, @intCast(table_base + string.offset)) + payload_offset)..];
+            const len = mem.readInt(u32, payload[0..4], .little);
+            return payload[4..][0..len];
+        }
+    };
+
+    pub const Bool = struct {
+        offset: u16,
+
+        pub fn read(@"bool": *const Bool, buffer: []const u8, table_base: usize) bool {
+            if (@"bool".offset == 0) return false;
+            return buffer[table_base + @"bool".offset] != 0;
+        }
+    };
+};
+
+fn parseFlatbuffer(comptime Root: type, arena: Allocator, bytes: []const u8) Allocator.Error!Root {
+    const root_offset: u31 = @intCast(mem.readInt(i32, bytes[0..4], .little));
+    const root_vtable_offset = root_offset - mem.readInt(i32, bytes[root_offset..][0..4], .little);
+    comptime assert(@typeInfo(Root).@"struct".field_names.len == 1); // TODO
+
+    const first_field_offset = mem.readInt(
+        u16,
+        bytes[@intCast(root_vtable_offset + 2)..][0..2],
+        .little,
+    );
+
+    const Slice = @typeInfo(Root).@"struct".field_types[0];
+    const Item = @typeInfo(Slice).pointer.child;
+    const Struct = Item.Struct;
+
+    const item_count_offset: usize = @intCast(root_offset + first_field_offset);
+    const item_count = mem.readInt(u32, bytes[item_count_offset..][0..4], .little);
+    const items_base = item_count_offset + @sizeOf(u32);
+
+    const items_slice = try arena.alloc(Item, item_count);
+    for (items_slice, 0..) |*item, item_index| {
+        const item_slot = items_base + item_index * @sizeOf(u32);
+        const item_offset = mem.readInt(u32, bytes[item_slot..][0..4], .little);
+
+        item.base = item_slot + item_offset;
+
+        const vtable_sub_ptr = bytes[item_slot + item_offset ..][0..4];
+        const item_vtable_sub = mem.readInt(i32, vtable_sub_ptr, .little);
+        const item_vtable_base =
+            bytes[@intCast(@as(isize, @intCast(item_slot + item_offset)) - item_vtable_sub)..];
+
+        const item_vtable_size = mem.readInt(u16, item_vtable_base[0..2], .little);
+
+        inline for (@typeInfo(Struct).@"struct".field_names, 0..) |field_name, field_index| {
+            const offset_pos = 4 + field_index * @sizeOf(u16);
+
+            if (offset_pos > item_vtable_size) {
+                @field(item.fields, field_name) = .{ .offset = 0 };
+            } else {
+                const field_offset =
+                    mem.readInt(u16, item_vtable_base[offset_pos..][0..2], .little);
+
+                @field(item.fields, field_name) = .{ .offset = field_offset };
+            }
+        }
+    }
+
+    return .{ .data = items_slice };
 }
 
 const String = enum(u32) {
@@ -170,7 +295,8 @@ fn BackingType(comptime T: type) type {
 fn convertTemplateList(
     arena: Allocator,
     comptime Template: type,
-    list: []const Template,
+    buffer_fbs: []const u8,
+    list_fbs: []const fbs.Table(Template.Fbs),
     output: *Io.Writer,
 ) !void {
     comptime assert(fieldsOrderedByAlignment(Template));
@@ -178,7 +304,7 @@ fn convertTemplateList(
     const field_types = @typeInfo(Template).@"struct".field_types;
     const field_names = @typeInfo(Template).@"struct".field_names;
     const Offsets = @Struct(.@"extern", null, field_names, &@splat(u32), &@splat(.{}));
-    const item_count: u32 = @intCast(list.len);
+    const item_count: u32 = @intCast(list_fbs.len);
 
     var offsets: Offsets = undefined;
 
@@ -193,11 +319,14 @@ fn convertTemplateList(
 
     inline for (field_types, field_names, struct_of_arrays) |FieldType, field_name, *array| {
         const field_values = try arena.alloc(BackingType(FieldType), item_count);
-        for (list, field_values) |template, *field_value| {
-            const value_json = @field(template, field_name);
+
+        for (list_fbs, field_values) |template_fbs, *field_value| {
+            const value_fbs =
+                @field(template_fbs.fields, field_name).read(buffer_fbs, template_fbs.base);
+
             field_value.* = switch (FieldType) {
-                []const u8 => try string_table.put(arena, value_json),
-                else => value_json,
+                String => try string_table.put(arena, value_fbs),
+                else => value_fbs,
             };
         }
 
