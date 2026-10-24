@@ -45,24 +45,24 @@ pub const Avatar = struct {
     pub const List = struct {
         count: u32,
         bits_buffer: [count_max]Bits,
-        keys_buffer: [count_max]Id,
+        ids_buffer: [count_max]Id,
 
         pub const empty: List = .{
             .count = 0,
             .bits_buffer = undefined,
-            .keys_buffer = undefined,
+            .ids_buffer = undefined,
         };
 
         pub fn bits(list: *List) []Bits {
             return list.bits_buffer[0..list.count];
         }
 
-        pub fn keys(list: *List) []Id {
-            return list.keys_buffer[0..list.count];
+        pub fn ids(list: *List) []Id {
+            return list.ids_buffer[0..list.count];
         }
 
         pub fn getIndexById(list: *List, id: Id) ?u32 {
-            if (mem.findScalar(Id, list.keys(), id)) |index_usize|
+            if (mem.findScalar(Id, list.ids(), id)) |index_usize|
                 return @intCast(index_usize);
 
             return null;
@@ -80,7 +80,7 @@ pub const Avatar = struct {
 
         pub fn replaceAt(list: *List, index: u32, avatar: Avatar) void {
             assert(list.count > index);
-            assert(list.keys()[index] == avatar.id); // avatar id is immutable
+            assert(list.ids()[index] == avatar.id); // avatar id is immutable
 
             list.bits()[index] = avatar.bits;
         }
@@ -103,7 +103,7 @@ pub const Avatar = struct {
             defer list.count += 1;
             const index = list.count;
 
-            list.keys_buffer[index] = avatar.id;
+            list.ids_buffer[index] = avatar.id;
             list.bits_buffer[index] = avatar.bits;
 
             return .{ .found_existing = false, .index = index };
@@ -206,7 +206,7 @@ pub fn saveToFile(player: *Player, io: Io, dir: Io.Dir, sub_path: []const u8) !v
 
     vecs.appendAssumeCapacity(@ptrCast(&header));
     vecs.appendAssumeCapacity(@ptrCast(player.avatars.bits()));
-    vecs.appendAssumeCapacity(@ptrCast(player.avatars.keys()));
+    vecs.appendAssumeCapacity(@ptrCast(player.avatars.ids()));
 
     var af = try dir.createFileAtomic(io, sub_path, .{ .replace = true });
     defer af.deinit(io);
@@ -329,7 +329,7 @@ pub fn loadFromFile(
 
     player.avatars.count = header.avatar_count;
     vecs.appendAssumeCapacity(@ptrCast(player.avatars.bits()));
-    vecs.appendAssumeCapacity(@ptrCast(player.avatars.keys()));
+    vecs.appendAssumeCapacity(@ptrCast(player.avatars.ids()));
 
     file_reader.interface.readVecAll(vecs.items) catch |err| switch (err) {
         error.EndOfStream => return diag.fileSystem(error.EarlyEos),

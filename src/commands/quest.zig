@@ -43,7 +43,7 @@ pub fn StartTrainingQuestCsReq(session: *Session) !void {
     var avatar_list: std.ArrayList(protobuf.gen.AvatarInfo) = .initBuffer(&avatar_buffer);
 
     for (
-        session.player.avatars.keys(),
+        session.player.avatars.ids(),
         session.player.avatars.bits(),
     ) |id, bits| {
         protobuf.pack.avatarInfo(
