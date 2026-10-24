@@ -36,6 +36,7 @@ pub fn avatarInfo(out: *gen.AvatarInfo, avatar: Player.Avatar) void {
         .level = avatar.bits.level_up.getLevel(),
         .rank = avatar.bits.level_up.getRank(),
         .is_favorite = avatar.bits.flags.favorite,
+        .cur_weapon_uid = @backingInt(avatar.weapon_uid_maybe),
         .unlocked_talent_num = 6,
         .mindscape_tab_state = &.{ false, false, false, true, true, true },
         .skill_type_level = &skills,

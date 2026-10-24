@@ -20,7 +20,7 @@ avatars: Avatar.List,
 weapons: Weapon.List,
 
 pub const Header = extern struct {
-    pub const current_version: u32 = 2;
+    pub const current_version: u32 = 3;
 
     comptime {
         assert(hasUniqueRepresentation(@This()));
@@ -35,6 +35,7 @@ pub const Header = extern struct {
 pub const Avatar = struct {
     id: Id,
     bits: Bits,
+    weapon_uid_maybe: Weapon.Uid.Optional,
 
     pub const count_max = templates.AvatarBase.table.count;
 
@@ -51,11 +52,13 @@ pub const Avatar = struct {
         count: u32,
         bits_buffer: [count_max]Bits,
         ids_buffer: [count_max]Id,
+        weapon_uids_buffer: [count_max]Weapon.Uid.Optional,
 
         pub const empty: List = .{
             .count = 0,
             .bits_buffer = undefined,
             .ids_buffer = undefined,
+            .weapon_uids_buffer = undefined,
         };
 
         pub fn bits(list: *List) []Bits {
@@ -66,8 +69,19 @@ pub const Avatar = struct {
             return list.ids_buffer[0..list.count];
         }
 
+        pub fn weaponUids(list: *List) []Weapon.Uid.Optional {
+            return list.weapon_uids_buffer[0..list.count];
+        }
+
         pub fn getIndexById(list: *List, id: Id) ?u32 {
             if (mem.findScalar(Id, list.ids(), id)) |index_usize|
+                return @intCast(index_usize);
+
+            return null;
+        }
+
+        pub fn getIndexByWeaponUid(list: *List, weapon_uid: Weapon.Uid) ?u32 {
+            if (mem.findScalar(Weapon.Uid.Optional, list.weaponUids(), .wrap(weapon_uid))) |index_usize|
                 return @intCast(index_usize);
 
             return null;
@@ -80,6 +94,17 @@ pub const Avatar = struct {
             return .{ index, .{
                 .id = id,
                 .bits = list.bits()[index],
+                .weapon_uid_maybe = list.weaponUids()[index],
+            } };
+        }
+
+        pub fn getByWeaponUid(list: *List, weapon_uid: Weapon.Uid) ?struct { u32, Avatar } {
+            const index = list.getIndexByWeaponUid(weapon_uid) orelse return null;
+
+            return .{ index, .{
+                .id = list.ids()[index],
+                .bits = list.bits()[index],
+                .weapon_uid_maybe = .wrap(weapon_uid),
             } };
         }
 
@@ -88,6 +113,7 @@ pub const Avatar = struct {
             assert(list.ids()[index] == avatar.id); // avatar id is immutable
 
             list.bits()[index] = avatar.bits;
+            list.weaponUids()[index] = avatar.weapon_uid_maybe;
         }
 
         pub const GetOrAddResult = struct {
@@ -226,6 +252,13 @@ pub const Weapon = struct {
 
             return uid;
         }
+
+        pub fn getIndexByUid(list: *List, uid: Uid) ?u32 {
+            if (mem.findScalar(Uid, list.uids(), uid)) |index_usize|
+                return @intCast(index_usize);
+
+            return null;
+        }
     };
 
     pub const Id = enum(u32) {
@@ -277,6 +310,7 @@ pub fn initDefaults(player: *Player) void {
         const result = player.avatars.getOrAdd(.{
             .id = id,
             .bits = avatar_bits_maxed_out,
+            .weapon_uid_maybe = .none,
         }) catch |err| switch (err) {
             error.NoSpaceLeft => unreachable,
         };
@@ -297,7 +331,7 @@ pub fn initDefaults(player: *Player) void {
 }
 
 pub fn saveToFile(player: *Player, io: Io, dir: Io.Dir, sub_path: []const u8) !void {
-    var vecs_buffer: [5][]const u8 = undefined;
+    var vecs_buffer: [6][]const u8 = undefined;
     var vecs: std.ArrayList([]const u8) = .initBuffer(&vecs_buffer);
 
     const header: Header = .{
@@ -310,6 +344,7 @@ pub fn saveToFile(player: *Player, io: Io, dir: Io.Dir, sub_path: []const u8) !v
     vecs.appendAssumeCapacity(@ptrCast(&header));
     vecs.appendAssumeCapacity(@ptrCast(player.avatars.bits()));
     vecs.appendAssumeCapacity(@ptrCast(player.avatars.ids()));
+    vecs.appendAssumeCapacity(@ptrCast(player.avatars.weaponUids()));
     vecs.appendAssumeCapacity(@ptrCast(player.weapons.bits()));
     vecs.appendAssumeCapacity(@ptrCast(player.weapons.uids()));
 
@@ -436,12 +471,16 @@ pub fn loadFromFile(
             .encountered = header.weapon_count,
         });
 
-    var vecs_buffer: [4][]u8 = undefined;
+    var vecs_buffer: [5][]u8 = undefined;
     var vecs: std.ArrayList([]u8) = .initBuffer(&vecs_buffer);
 
     player.avatars.count = header.avatar_count;
     vecs.appendAssumeCapacity(@ptrCast(player.avatars.bits()));
     vecs.appendAssumeCapacity(@ptrCast(player.avatars.ids()));
+    vecs.appendAssumeCapacity(@ptrCast(player.avatars.weaponUids()));
+
+    player.weapons.count = header.weapon_count;
+    player.weapons.uid_counter = header.weapon_uid_counter;
     vecs.appendAssumeCapacity(@ptrCast(player.weapons.bits()));
     vecs.appendAssumeCapacity(@ptrCast(player.weapons.uids()));
 

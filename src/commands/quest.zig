@@ -45,10 +45,11 @@ pub fn StartTrainingQuestCsReq(session: *Session) !void {
     for (
         session.player.avatars.ids(),
         session.player.avatars.bits(),
-    ) |id, bits| {
+        session.player.avatars.weaponUids(),
+    ) |id, bits, weapon_uid_maybe| {
         protobuf.pack.avatarInfo(
             avatar_list.addOneAssumeCapacity(),
-            .{ .id = id, .bits = bits },
+            .{ .id = id, .bits = bits, .weapon_uid_maybe = weapon_uid_maybe },
         );
     }
 
