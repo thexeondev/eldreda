@@ -12,11 +12,11 @@ pub fn GetAvatarDataCsReq(session: *Session) !void {
 
     for (
         session.player.avatars.keys(),
-        session.player.avatars.data(),
-    ) |id, data| {
+        session.player.avatars.bits(),
+    ) |id, bits| {
         protobuf.pack.avatarInfo(
             avatar_list.addOneAssumeCapacity(),
-            .{ .id = id, .data = data },
+            .{ .id = id, .bits = bits },
         );
     }
 
@@ -27,22 +27,17 @@ pub fn GetAvatarDataCsReq(session: *Session) !void {
 
 pub fn AvatarFavoriteCsReq(session: *Session) !void {
     const request = try session.command.decodeBody(protobuf.gen.AvatarFavoriteCsReq.Decoded);
-    const avatar_id = Player.Avatar.Id.fromInt(request.avatar_id) orelse
-        return session.sink.respondMinimal(.AvatarFavoriteScRsp, .{ .retcode = 1 });
-    const avatar_index = session.player.avatars.getIndexById(avatar_id) orelse
+    const index, var avatar = session.player.avatars.get(request.avatar_id) orelse
         return session.sink.respondMinimal(.AvatarFavoriteScRsp, .{ .retcode = 1 });
 
-    const data = &session.player.avatars.data()[avatar_index];
+    if (avatar.bits.flags.favorite != request.is_favorite) {
+        avatar.bits.flags.favorite = true;
 
-    if (data.flags.favorite != request.is_favorite) {
         session.playerModified();
-        data.flags.favorite = true;
+        session.player.avatars.replaceAt(index, avatar);
 
         var avatar_info: protobuf.gen.AvatarInfo = undefined;
-        protobuf.pack.avatarInfo(
-            &avatar_info,
-            .{ .id = avatar_id, .data = data.* },
-        );
+        protobuf.pack.avatarInfo(&avatar_info, avatar);
 
         try session.sink.notify(protobuf.gen.PlayerSyncScNotify, &.{
             .avatar = .{ .avatar_list = (&avatar_info)[0..1] },

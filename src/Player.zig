@@ -27,29 +27,34 @@ pub const Header = extern struct {
     avatar_count: u32,
 };
 
-pub const Avatar = extern struct {
+pub const Avatar = struct {
+    id: Id,
+    bits: Bits,
+
     pub const count_max = templates.AvatarBase.table.count;
 
-    comptime {
-        assert(hasUniqueRepresentation(@This()));
-    }
+    pub const Bits = extern struct {
+        level_up: LevelUp,
+        flags: Flags,
 
-    level_up: LevelUp,
-    flags: Flags,
+        comptime {
+            assert(hasUniqueRepresentation(@This()));
+        }
+    };
 
     pub const List = struct {
         count: u32,
-        data_buffer: [count_max]Avatar,
+        bits_buffer: [count_max]Bits,
         keys_buffer: [count_max]Id,
 
         pub const empty: List = .{
             .count = 0,
-            .data_buffer = undefined,
+            .bits_buffer = undefined,
             .keys_buffer = undefined,
         };
 
-        pub fn data(list: *List) []Avatar {
-            return list.data_buffer[0..list.count];
+        pub fn bits(list: *List) []Bits {
+            return list.bits_buffer[0..list.count];
         }
 
         pub fn keys(list: *List) []Id {
@@ -63,6 +68,23 @@ pub const Avatar = extern struct {
             return null;
         }
 
+        pub fn get(list: *List, id_int: u32) ?struct { u32, Avatar } {
+            const id = Id.fromInt(id_int) orelse return null;
+            const index = list.getIndexById(id) orelse return null;
+
+            return .{ index, .{
+                .id = id,
+                .bits = list.bits()[index],
+            } };
+        }
+
+        pub fn replaceAt(list: *List, index: u32, avatar: Avatar) void {
+            assert(list.count > index);
+            assert(list.keys()[index] == avatar.id); // avatar id is immutable
+
+            list.bits()[index] = avatar.bits;
+        }
+
         pub const GetOrAddResult = struct {
             found_existing: bool,
             index: u32,
@@ -70,9 +92,9 @@ pub const Avatar = extern struct {
 
         pub fn getOrAdd(
             list: *List,
-            entry: struct { id: Id, data: Avatar },
+            avatar: Avatar,
         ) error{NoSpaceLeft}!GetOrAddResult {
-            if (list.getIndexById(entry.id)) |index|
+            if (list.getIndexById(avatar.id)) |index|
                 return .{ .found_existing = true, .index = index };
 
             if (list.count == count_max) return error.NoSpaceLeft;
@@ -81,8 +103,8 @@ pub const Avatar = extern struct {
             defer list.count += 1;
             const index = list.count;
 
-            list.keys_buffer[index] = entry.id;
-            list.data_buffer[index] = entry.data;
+            list.keys_buffer[index] = avatar.id;
+            list.bits_buffer[index] = avatar.bits;
 
             return .{ .found_existing = false, .index = index };
         }
@@ -154,7 +176,7 @@ pub fn initDefaults(player: *Player) void {
         .avatars = .empty,
     };
 
-    const avatar_maxed_out: Avatar = .{
+    const avatar_bits_maxed_out: Avatar.Bits = .{
         .level_up = comptime Avatar.LevelUp.fromRankAndLevel(6, 60).?,
         .flags = .{ .favorite = false },
     };
@@ -164,7 +186,7 @@ pub fn initDefaults(player: *Player) void {
 
         const result = player.avatars.getOrAdd(.{
             .id = id,
-            .data = avatar_maxed_out,
+            .bits = avatar_bits_maxed_out,
         }) catch |err| switch (err) {
             error.NoSpaceLeft => unreachable,
         };
@@ -183,7 +205,7 @@ pub fn saveToFile(player: *Player, io: Io, dir: Io.Dir, sub_path: []const u8) !v
     };
 
     vecs.appendAssumeCapacity(@ptrCast(&header));
-    vecs.appendAssumeCapacity(@ptrCast(player.avatars.data()));
+    vecs.appendAssumeCapacity(@ptrCast(player.avatars.bits()));
     vecs.appendAssumeCapacity(@ptrCast(player.avatars.keys()));
 
     var af = try dir.createFileAtomic(io, sub_path, .{ .replace = true });
@@ -306,7 +328,7 @@ pub fn loadFromFile(
     var vecs: std.ArrayList([]u8) = .initBuffer(&vecs_buffer);
 
     player.avatars.count = header.avatar_count;
-    vecs.appendAssumeCapacity(@ptrCast(player.avatars.data()));
+    vecs.appendAssumeCapacity(@ptrCast(player.avatars.bits()));
     vecs.appendAssumeCapacity(@ptrCast(player.avatars.keys()));
 
     file_reader.interface.readVecAll(vecs.items) catch |err| switch (err) {

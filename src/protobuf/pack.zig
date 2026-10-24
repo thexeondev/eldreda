@@ -30,15 +30,12 @@ const skills: [@typeInfo(Skill).@"enum".field_names.len]gen.AvatarSkillLevel = s
     break :skills array;
 };
 
-pub fn avatarInfo(out: *gen.AvatarInfo, options: struct {
-    id: Player.Avatar.Id,
-    data: Player.Avatar,
-}) void {
+pub fn avatarInfo(out: *gen.AvatarInfo, avatar: Player.Avatar) void {
     out.* = .{
-        .id = @backingInt(options.id),
-        .level = options.data.level_up.getLevel(),
-        .rank = options.data.level_up.getRank(),
-        .is_favorite = options.data.flags.favorite,
+        .id = @backingInt(avatar.id),
+        .level = avatar.bits.level_up.getLevel(),
+        .rank = avatar.bits.level_up.getRank(),
+        .is_favorite = avatar.bits.flags.favorite,
         .unlocked_talent_num = 6,
         .mindscape_tab_state = &.{ false, false, false, true, true, true },
         .skill_type_level = &skills,

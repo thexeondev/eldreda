@@ -44,11 +44,11 @@ pub fn StartTrainingQuestCsReq(session: *Session) !void {
 
     for (
         session.player.avatars.keys(),
-        session.player.avatars.data(),
-    ) |id, data| {
+        session.player.avatars.bits(),
+    ) |id, bits| {
         protobuf.pack.avatarInfo(
             avatar_list.addOneAssumeCapacity(),
-            .{ .id = id, .data = data },
+            .{ .id = id, .bits = bits },
         );
     }
 
