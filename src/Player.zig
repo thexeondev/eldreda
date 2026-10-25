@@ -547,20 +547,137 @@ pub fn initDefaults(player: *Player) void {
             error.NoSpaceLeft => unreachable,
         };
     }
+}
 
-    for (templates.Equipment.table.items(.id)) |id_int| {
-        const id = Equipment.Id.fromInt(id_int) orelse continue;
+const main_properties_per_slot: [6][]const Equipment.Property = .{
+    &.{.{ .key = @fromBackingInt(11103), .base = 550, .add = 1 }},
+    &.{.{ .key = @fromBackingInt(12103), .base = 79, .add = 1 }},
+    &.{.{ .key = @fromBackingInt(13103), .base = 46, .add = 1 }},
+    &.{
+        .{ .key = @fromBackingInt(11102), .base = 750, .add = 1 },
+        .{ .key = @fromBackingInt(12102), .base = 750, .add = 1 },
+        .{ .key = @fromBackingInt(13102), .base = 1200, .add = 1 },
+        .{ .key = @fromBackingInt(31203), .base = 23, .add = 1 },
+        .{ .key = @fromBackingInt(21103), .base = 1200, .add = 1 },
+        .{ .key = @fromBackingInt(29193), .base = 600, .add = 1 },
+    },
+    &.{
+        .{ .key = @fromBackingInt(11102), .base = 750, .add = 1 },
+        .{ .key = @fromBackingInt(12102), .base = 750, .add = 1 },
+        .{ .key = @fromBackingInt(13102), .base = 1200, .add = 1 },
+        .{ .key = @fromBackingInt(23103), .base = 600, .add = 1 },
+        .{ .key = @fromBackingInt(31503), .base = 750, .add = 1 },
+        .{ .key = @fromBackingInt(31603), .base = 750, .add = 1 },
+        .{ .key = @fromBackingInt(31703), .base = 750, .add = 1 },
+        .{ .key = @fromBackingInt(31803), .base = 750, .add = 1 },
+        .{ .key = @fromBackingInt(31903), .base = 750, .add = 1 },
+        .{ .key = @fromBackingInt(32303), .base = 750, .add = 1 },
+    },
+    &.{
+        .{ .key = @fromBackingInt(11102), .base = 750, .add = 1 },
+        .{ .key = @fromBackingInt(12102), .base = 750, .add = 1 },
+        .{ .key = @fromBackingInt(13102), .base = 1200, .add = 1 },
+        .{ .key = @fromBackingInt(31402), .base = 750, .add = 1 },
+        .{ .key = @fromBackingInt(30502), .base = 1500, .add = 1 },
+        .{ .key = @fromBackingInt(12202), .base = 450, .add = 1 },
+    },
+};
 
-        _ = player.equipment.add(.{
+const rand_properties: [10]Equipment.Property = .{
+    .{ .key = @fromBackingInt(11103), .base = 112, .add = 1 },
+    .{ .key = @fromBackingInt(11102), .base = 300, .add = 1 },
+    .{ .key = @fromBackingInt(12103), .base = 19, .add = 1 },
+    .{ .key = @fromBackingInt(12102), .base = 300, .add = 1 },
+    .{ .key = @fromBackingInt(13103), .base = 15, .add = 1 },
+    .{ .key = @fromBackingInt(13102), .base = 480, .add = 1 },
+    .{ .key = @fromBackingInt(23203), .base = 9, .add = 1 },
+    .{ .key = @fromBackingInt(31203), .base = 9, .add = 1 },
+    .{ .key = @fromBackingInt(21103), .base = 480, .add = 1 },
+    .{ .key = @fromBackingInt(20103), .base = 240, .add = 1 },
+};
+
+/// TODO: move to a separate utility.
+pub fn addRandomEquipment(
+    player: *Player,
+    rng: std.Random,
+    comptime count: u32,
+) error{NoSpaceLeft}!void {
+    var slots_rand: [count]u8 = undefined;
+    rng.bytes(&slots_rand);
+
+    var suit_indices_rand: [count]u32 = undefined;
+    rng.bytes(@ptrCast(&suit_indices_rand));
+
+    var main_property_rands: [count]u8 = undefined;
+    rng.bytes(&main_property_rands);
+
+    var select_indices_rands: [count][4]u8 = undefined;
+    rng.bytes(@ptrCast(&select_indices_rands));
+
+    var property_add_rands: [count][3]u8 = undefined;
+    rng.bytes(@ptrCast(&property_add_rands));
+
+    for (
+        &slots_rand,
+        &suit_indices_rand,
+        &main_property_rands,
+        &select_indices_rands,
+        &property_add_rands,
+    ) |slot_rand, suit_index_rand, main_property_rand, select_indices_rand, property_add_rand| {
+        const slot = (slot_rand % Avatar.equipment_count) + 1;
+        const suit_index = suit_index_rand % templates.EquipmentSuit.table.count;
+        const suit_id = templates.EquipmentSuit.table.items(.id)[suit_index];
+        const equip_id = suit_id + 40 + slot;
+
+        var rand_properties_buf = rand_properties;
+        var property_selection: std.ArrayList(Equipment.Property) = .{
+            .items = &rand_properties_buf,
+            .capacity = rand_properties.len,
+            .pointer_stability = .{},
+        };
+
+        const main_property_selection = main_properties_per_slot[slot - 1];
+        const main_property = main_property_selection[main_property_rand % main_property_selection.len];
+
+        for (property_selection.items, 0..) |rand_property, index| {
+            if (rand_property.key == main_property.key) {
+                _ = property_selection.swapRemove(index);
+                break;
+            }
+        }
+
+        var equipment: Equipment = .{
             .uid_maybe = .none,
             .bits = .{
-                .id = id,
-                .main_property = .{ .key = @fromBackingInt(11103), .base = 550, .add = 0 },
+                .id = Equipment.Id.fromInt(equip_id).?,
+                .main_property = main_property,
                 .sub_properties = @splat(.none),
             },
-        }) catch |err| switch (err) {
-            error.NoSpaceLeft => unreachable,
         };
+
+        var rand_add_budget: u8 = 5;
+        var rand_add: [equipment.bits.sub_properties.len]u16 = @splat(0);
+        for (rand_add[0 .. rand_add.len - 1], property_add_rand) |*add, rand| {
+            if (rand_add_budget > 0) {
+                add.* = rand % rand_add_budget;
+                rand_add_budget -|= rand % rand_add_budget;
+            }
+        }
+        rand_add[rand_add.len - 1] = rand_add_budget;
+
+        for (
+            &equipment.bits.sub_properties,
+            select_indices_rand,
+            rand_add,
+        ) |*sub_property, to_select_rand, add| {
+            const to_select = to_select_rand % property_selection.items.len;
+            defer _ = property_selection.swapRemove(to_select);
+
+            sub_property.* = .wrap(property_selection.items[to_select]);
+            sub_property.add += add;
+        }
+
+        _ = try player.equipment.add(equipment);
     }
 }
 

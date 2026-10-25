@@ -32,6 +32,13 @@ pub const Equipment = struct {
     id: u32,
 };
 
+pub const EquipmentSuit = struct {
+    pub const Table = TemplateTb(EquipmentSuit, "EquipmentSuitTemplateTb", .id);
+    pub const table: Table = .init();
+
+    id: u32,
+};
+
 pub const String = enum(u32) {
     empty = std.math.maxInt(u32),
     _,

@@ -119,6 +119,17 @@ fn serveConnection(
         error.Canceled => |e| return e,
         error.FileNotFound => {
             player.initDefaults();
+
+            { // TODO: move this into a separate utility
+                var rng: std.Random.DefaultPrng = .init(
+                    @bitCast(Io.Clock.now(.real, io).toMilliseconds()),
+                );
+
+                player.addRandomEquipment(rng.random(), 500) catch |e| switch (e) {
+                    error.NoSpaceLeft => unreachable,
+                };
+            }
+
             try player.saveToFile(io, server.storage.player_dir, player_file_path);
         },
         error.CheckDiagnostics => return log.err(
@@ -127,7 +138,7 @@ fn serveConnection(
         ),
     };
 
-    var send_buffer: [16384]u8 = undefined;
+    var send_buffer: [64 * 1024]u8 = undefined;
 
     while (true) {
         const command: Command = try .receive(connection.reader);
