@@ -16,6 +16,8 @@ const sdk = eldreda.sdk;
 const http = eldreda.http;
 const Configuration = eldreda.Configuration;
 
+const build_options = @import("build_options");
+
 const gateway = @import("main/gateway.zig");
 
 var safe_allocator: std.heap.SafeAllocator = .init(std.heap.page_allocator, .{});
@@ -111,8 +113,6 @@ const Command = enum {
     version,
 };
 
-const version_string = "0.1.0-dev"; // TODO: include commit hash
-
 pub fn main(init: process.Init.Minimal) !void {
     const gpa = if (build_mode_has_safety) safe_allocator.allocator() else std.heap.smp_allocator;
     defer if (build_mode_has_safety) assert(safe_allocator.deinit() == 0);
@@ -143,7 +143,7 @@ pub fn main(init: process.Init.Minimal) !void {
     switch (command_tag) {
         .serve => {},
         .version => {
-            Io.File.stdout().writeStreamingAll(io, version_string ++ "\n") catch {};
+            Io.File.stdout().writeStreamingAll(io, build_options.version ++ "\n") catch {};
             process.exit(0);
         },
     }

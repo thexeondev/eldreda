@@ -1,6 +1,9 @@
 const std = @import("std");
 const Io = std.Io;
+const mem = std.mem;
 const Build = std.Build;
+
+const build_version: std.SemanticVersion = .{ .major = 0, .minor = 1, .patch = 0 };
 
 pub fn build(b: *Build) void {
     const target = b.standardTargetOptions(.{});
@@ -29,6 +32,12 @@ pub fn build(b: *Build) void {
         }),
     });
     b.installArtifact(exe);
+
+    const version_string = collectVersionStringFromGit(b);
+
+    const exe_options = b.addOptions();
+    exe.root_module.addOptions("build_options", exe_options);
+    exe_options.addOption([]const u8, "version", version_string);
 
     const run_exe = b.addRunArtifact(exe);
     run_exe.addPassthruArgs();
@@ -112,4 +121,35 @@ fn convertTemplates(b: *Build, eldreda_module: *Build.Module) void {
 
         convert.addFileInput(b.path(b.fmt("assets/TemplateTb/{s}", .{entry.name})));
     }
+}
+
+fn collectVersionStringFromGit(b: *Build) []const u8 {
+    const version_string = b.fmt(
+        "{d}.{d}.{d}",
+        .{ build_version.major, build_version.minor, build_version.patch },
+    );
+
+    b.root.access(b.graph.io, ".git/logs/HEAD", .{ .read = true }) catch
+        return version_string;
+
+    b.dependOnFileMetadata(b.path(".git/logs/HEAD"));
+
+    var code: u8 = undefined;
+    const commit_height_untrimmed = b.runAllowFail(&[_][]const u8{
+        "git",
+        "-C", b.fmt("{f}", .{b.root}), // affects the --git-dir argument
+        "--git-dir", ".git", // affected by the -C argument
+        "rev-list", "--count", "HEAD", //
+    }, &code, .ignore) catch return version_string;
+    const commit_height = mem.trim(u8, commit_height_untrimmed, "\n\r");
+
+    const commit_hash_untrimmed = b.runAllowFail(&[_][]const u8{
+        "git",
+        "-C", b.fmt("{f}", .{b.root}), // affects the --git-dir argument
+        "--git-dir", ".git", // affected by the -C argument
+        "rev-parse", "--short", "HEAD", //
+    }, &code, .ignore) catch return version_string;
+    const commit_hash = mem.trim(u8, commit_hash_untrimmed, "\n\r");
+
+    return b.fmt("{s}-dev.{s}+{s}", .{ version_string, commit_height, commit_hash });
 }
