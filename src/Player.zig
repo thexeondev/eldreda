@@ -21,7 +21,7 @@ weapons: Weapon.List,
 equipment: Equipment.List,
 
 pub const Header = extern struct {
-    pub const current_version: u32 = 4;
+    pub const current_version: u32 = 5;
 
     comptime {
         assert(hasUniqueRepresentation(@This()));
@@ -39,8 +39,11 @@ pub const Avatar = struct {
     id: Id,
     bits: Bits,
     weapon_uid_maybe: Weapon.Uid.Optional,
+    dressed_equipment: [equipment_count]Equipment.Uid.Optional,
 
     pub const count_max = templates.AvatarBase.table.count;
+
+    pub const equipment_count = 6;
 
     pub const Bits = extern struct {
         level_up: LevelUp,
@@ -56,12 +59,14 @@ pub const Avatar = struct {
         bits_buffer: [count_max]Bits,
         ids_buffer: [count_max]Id,
         weapon_uids_buffer: [count_max]Weapon.Uid.Optional,
+        dressed_equipment_buffer: [count_max][equipment_count]Equipment.Uid.Optional,
 
         pub const empty: List = .{
             .count = 0,
             .bits_buffer = undefined,
             .ids_buffer = undefined,
             .weapon_uids_buffer = undefined,
+            .dressed_equipment_buffer = undefined,
         };
 
         pub fn bits(list: *List) []Bits {
@@ -74,6 +79,10 @@ pub const Avatar = struct {
 
         pub fn weaponUids(list: *List) []Weapon.Uid.Optional {
             return list.weapon_uids_buffer[0..list.count];
+        }
+
+        pub fn dressedEquipment(list: *List) [][equipment_count]Equipment.Uid.Optional {
+            return list.dressed_equipment_buffer[0..list.count];
         }
 
         pub fn getIndexById(list: *List, id: Id) ?u32 {
@@ -90,25 +99,60 @@ pub const Avatar = struct {
             return null;
         }
 
+        pub fn getIndexByEquipmentUid(list: *List, equipment_uid: Equipment.Uid) ?struct {
+            avatar_index: u32,
+            equipment_slot_index: u32,
+        } {
+            if (mem.findScalar(
+                Equipment.Uid.Optional,
+                @ptrCast(list.dressedEquipment()),
+                .wrap(equipment_uid),
+            )) |equipment_index_usize| {
+                const avatar_index_usize = @divFloor(equipment_index_usize, equipment_count);
+                const equipment_slot_index_usize = equipment_index_usize % equipment_count;
+
+                return .{
+                    .avatar_index = @intCast(avatar_index_usize),
+                    .equipment_slot_index = @intCast(equipment_slot_index_usize),
+                };
+            }
+
+            return null;
+        }
+
+        pub fn at(list: *List, index: u32) Avatar {
+            return .{
+                .id = list.ids()[index],
+                .bits = list.bits()[index],
+                .weapon_uid_maybe = list.weaponUids()[index],
+                .dressed_equipment = list.dressedEquipment()[index],
+            };
+        }
+
         pub fn get(list: *List, id_int: u32) ?struct { u32, Avatar } {
             const id = Id.fromInt(id_int) orelse return null;
             const index = list.getIndexById(id) orelse return null;
 
-            return .{ index, .{
-                .id = id,
-                .bits = list.bits()[index],
-                .weapon_uid_maybe = list.weaponUids()[index],
-            } };
+            return .{ index, list.at(index) };
         }
 
         pub fn getByWeaponUid(list: *List, weapon_uid: Weapon.Uid) ?struct { u32, Avatar } {
             const index = list.getIndexByWeaponUid(weapon_uid) orelse return null;
+            return .{ index, list.at(index) };
+        }
 
-            return .{ index, .{
-                .id = list.ids()[index],
-                .bits = list.bits()[index],
-                .weapon_uid_maybe = .wrap(weapon_uid),
-            } };
+        pub fn getByEquipmentUid(list: *List, equipment_uid: Equipment.Uid) ?struct {
+            equipment_slot_index: u32,
+            avatar_index: u32,
+            avatar: Avatar,
+        } {
+            const result = list.getIndexByEquipmentUid(equipment_uid) orelse return null;
+
+            return .{
+                .equipment_slot_index = result.equipment_slot_index,
+                .avatar_index = result.avatar_index,
+                .avatar = list.at(result.avatar_index),
+            };
         }
 
         pub fn replaceAt(list: *List, index: u32, avatar: Avatar) void {
@@ -117,6 +161,7 @@ pub const Avatar = struct {
 
             list.bits()[index] = avatar.bits;
             list.weaponUids()[index] = avatar.weapon_uid_maybe;
+            list.dressedEquipment()[index] = avatar.dressed_equipment;
         }
 
         pub const GetOrAddResult = struct {
@@ -139,6 +184,8 @@ pub const Avatar = struct {
 
             list.ids_buffer[index] = avatar.id;
             list.bits_buffer[index] = avatar.bits;
+            list.weapon_uids_buffer[index] = avatar.weapon_uid_maybe;
+            list.dressed_equipment_buffer[index] = avatar.dressed_equipment;
 
             return .{ .found_existing = false, .index = index };
         }
@@ -482,6 +529,7 @@ pub fn initDefaults(player: *Player) void {
             .id = id,
             .bits = avatar_bits_maxed_out,
             .weapon_uid_maybe = .none,
+            .dressed_equipment = @splat(.none),
         }) catch |err| switch (err) {
             error.NoSpaceLeft => unreachable,
         };
@@ -517,7 +565,7 @@ pub fn initDefaults(player: *Player) void {
 }
 
 pub fn saveToFile(player: *Player, io: Io, dir: Io.Dir, sub_path: []const u8) !void {
-    var vecs_buffer: [8][]const u8 = undefined;
+    var vecs_buffer: [9][]const u8 = undefined;
     var vecs: std.ArrayList([]const u8) = .initBuffer(&vecs_buffer);
 
     const header: Header = .{
@@ -533,6 +581,7 @@ pub fn saveToFile(player: *Player, io: Io, dir: Io.Dir, sub_path: []const u8) !v
     vecs.appendAssumeCapacity(@ptrCast(player.avatars.bits()));
     vecs.appendAssumeCapacity(@ptrCast(player.avatars.ids()));
     vecs.appendAssumeCapacity(@ptrCast(player.avatars.weaponUids()));
+    vecs.appendAssumeCapacity(@ptrCast(player.avatars.dressedEquipment()));
     vecs.appendAssumeCapacity(@ptrCast(player.weapons.bits()));
     vecs.appendAssumeCapacity(@ptrCast(player.weapons.uids()));
     vecs.appendAssumeCapacity(@ptrCast(player.equipment.bits()));
@@ -668,13 +717,14 @@ pub fn loadFromFile(
             .encountered = header.equipment_count,
         });
 
-    var vecs_buffer: [7][]u8 = undefined;
+    var vecs_buffer: [8][]u8 = undefined;
     var vecs: std.ArrayList([]u8) = .initBuffer(&vecs_buffer);
 
     player.avatars.count = header.avatar_count;
     vecs.appendAssumeCapacity(@ptrCast(player.avatars.bits()));
     vecs.appendAssumeCapacity(@ptrCast(player.avatars.ids()));
     vecs.appendAssumeCapacity(@ptrCast(player.avatars.weaponUids()));
+    vecs.appendAssumeCapacity(@ptrCast(player.avatars.dressedEquipment()));
 
     player.weapons.count = header.weapon_count;
     player.weapons.uid_counter = header.weapon_uid_counter;

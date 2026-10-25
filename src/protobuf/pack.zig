@@ -31,8 +31,24 @@ const skills: [@typeInfo(Skill).@"enum".field_names.len]gen.AvatarSkillLevel = s
     break :skills array;
 };
 
-pub fn avatarInfo(out: *gen.AvatarInfo, avatar: Player.Avatar) void {
-    out.* = .{
+pub const AvatarInfoList = StaticMultiArrayList(struct {
+    avatar_info: gen.AvatarInfo,
+    dressed_equip_buffer: [Player.Avatar.equipment_count]gen.DressedEquip,
+});
+
+pub fn avatarInfo(out: AvatarInfoList.Ptr, avatar: Player.Avatar) void {
+    var dressed_equip: std.ArrayList(gen.DressedEquip) = .initBuffer(out.dressed_equip_buffer);
+
+    for (avatar.dressed_equipment, 1..) |equipment_uid_maybe, slot_index| {
+        const equipment_uid = equipment_uid_maybe.unwrap() orelse continue;
+
+        dressed_equip.appendAssumeCapacity(.{
+            .index = @intCast(slot_index),
+            .equip_uid = @backingInt(equipment_uid),
+        });
+    }
+
+    out.avatar_info.* = .{
         .id = @backingInt(avatar.id),
         .level = avatar.bits.level_up.getLevel(),
         .rank = avatar.bits.level_up.getRank(),
@@ -41,6 +57,8 @@ pub fn avatarInfo(out: *gen.AvatarInfo, avatar: Player.Avatar) void {
         .unlocked_talent_num = 6,
         .mindscape_tab_state = &.{ false, false, false, true, true, true },
         .skill_type_level = &skills,
+        .passive_skill_level = 6,
+        .dressed_equip_list = dressed_equip.items,
     };
 }
 

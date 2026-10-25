@@ -39,17 +39,24 @@ pub fn StartTrainingQuestCsReq(session: *Session) !void {
     if (avatar_id_list.items.len == 0)
         return session.sink.respondMinimal(.StartTrainingQuestScRsp, .{ .retcode = 1 });
 
-    var avatar_buffer: [Player.Avatar.count_max]protobuf.gen.AvatarInfo = undefined;
-    var avatar_list: std.ArrayList(protobuf.gen.AvatarInfo) = .initBuffer(&avatar_buffer);
+    const buffer_size = protobuf.pack.AvatarInfoList.bufferSizeFor(Player.Avatar.count_max);
+    var buffer: [buffer_size]u8 align(protobuf.pack.AvatarInfoList.alignment) = undefined;
+    var avatar_list: protobuf.pack.AvatarInfoList = .init(&buffer);
 
     for (
         session.player.avatars.ids(),
         session.player.avatars.bits(),
         session.player.avatars.weaponUids(),
-    ) |id, bits, weapon_uid_maybe| {
+        session.player.avatars.dressedEquipment(),
+    ) |id, bits, weapon_uid_maybe, dressed_equipment| {
         protobuf.pack.avatarInfo(
-            avatar_list.addOneAssumeCapacity(),
-            .{ .id = id, .bits = bits, .weapon_uid_maybe = weapon_uid_maybe },
+            avatar_list.addOne(),
+            .{
+                .id = id,
+                .bits = bits,
+                .weapon_uid_maybe = weapon_uid_maybe,
+                .dressed_equipment = dressed_equipment,
+            },
         );
     }
 
@@ -62,7 +69,7 @@ pub fn StartTrainingQuestCsReq(session: *Session) !void {
         },
         .dungeon = .{
             .quest_id = request.quest_id,
-            .dungeon_package_info = .{ .avatar_list = avatar_list.items },
+            .dungeon_package_info = .{ .avatar_list = avatar_list.items(.avatar_info) },
         },
     });
 
