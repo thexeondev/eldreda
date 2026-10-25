@@ -69,9 +69,24 @@ pub const Server = struct {
     sdk_account_storage_mutex: Io.Mutex,
 };
 
-fn usage(io: Io) noreturn {
+fn generalUsage(io: Io) noreturn {
+    Io.File.stdout().writeStreamingAll(io,
+        \\Usage: eldreda [command] [options]
+        \\
+        \\Commands:
+        \\  serve    (default) Start the game server
+        \\  version  Print version number and exit
+        \\
+        \\General Options:
+        \\  --help, -h  Print this help and exit
+        \\
+    ) catch {};
+    process.exit(0);
+}
+
+fn serveUsage(io: Io) noreturn {
     Io.File.stdout().writeStreamingAll(io, std.fmt.comptimePrint(
-        \\Usage: eldreda [options]
+        \\Usage: eldreda serve [options]
         \\
         \\Options:
         \\  --help, -h             Print this help and exit
@@ -91,6 +106,13 @@ fn usage(io: Io) noreturn {
     process.exit(0);
 }
 
+const Command = enum {
+    serve,
+    version,
+};
+
+const version_string = "0.1.0-dev"; // TODO: include commit hash
+
 pub fn main(init: process.Init.Minimal) !void {
     const gpa = if (build_mode_has_safety) safe_allocator.allocator() else std.heap.smp_allocator;
     defer if (build_mode_has_safety) assert(safe_allocator.deinit() == 0);
@@ -106,17 +128,35 @@ pub fn main(init: process.Init.Minimal) !void {
     defer threaded.deinit();
     const io = threaded.io();
 
+    const args_slice = try init.args.toSlice(arena);
+    var args_i: usize = 1;
+
+    const command_string = nextArg(args_slice, &args_i) orelse "serve";
+    const command_tag = std.meta.stringToEnum(Command, command_string) orelse {
+        if (!mem.eql(u8, command_string, "-h") and
+            !mem.eql(u8, command_string, "--help"))
+            log.err("unknown command {q}", .{command_string});
+
+        generalUsage(io);
+    };
+
+    switch (command_tag) {
+        .serve => {},
+        .version => {
+            Io.File.stdout().writeStreamingAll(io, version_string ++ "\n") catch {};
+            process.exit(0);
+        },
+    }
+
     var config_path_maybe: ?[]const u8 = null;
     var http_address = comptime IpAddress.parseLiteral(default_http_address) catch unreachable;
     var gate_address = comptime IpAddress.parseLiteral(default_gate_address) catch unreachable;
     var storage_path: []const u8 = Storage.default_root_path;
     var public_url_prefix: []const u8 = default_public_url_prefix;
 
-    const args_slice = try init.args.toSlice(arena);
-    var args_i: usize = 1;
     while (nextArg(args_slice, &args_i)) |arg| {
         if (mem.eql(u8, "-h", arg) or mem.eql(u8, "--help", arg)) {
-            usage(io);
+            serveUsage(io);
         } else if (mem.cutPrefix(u8, arg, "--config-path=")) |path_string| {
             config_path_maybe = path_string;
         } else if (mem.cutPrefix(u8, arg, "--http-listen-address=")) |address_string| {
@@ -131,7 +171,7 @@ pub fn main(init: process.Init.Minimal) !void {
             storage_path = path_string;
         } else {
             log.err("unrecognized argument: {q}", .{arg});
-            usage(io);
+            serveUsage(io);
         }
     }
 
