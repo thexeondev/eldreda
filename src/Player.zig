@@ -559,7 +559,7 @@ const main_properties_per_slot: [6][]const Equipment.Property = .{
         .{ .key = @fromBackingInt(13102), .base = 1200, .add = 1 },
         .{ .key = @fromBackingInt(31203), .base = 23, .add = 1 },
         .{ .key = @fromBackingInt(21103), .base = 1200, .add = 1 },
-        .{ .key = @fromBackingInt(29193), .base = 600, .add = 1 },
+        .{ .key = @fromBackingInt(20103), .base = 600, .add = 1 },
     },
     &.{
         .{ .key = @fromBackingInt(11102), .base = 750, .add = 1 },
