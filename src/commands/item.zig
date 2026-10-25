@@ -25,7 +25,23 @@ pub fn GetWeaponDataCsReq(session: *Session) !void {
 }
 
 pub fn GetEquipDataCsReq(session: *Session) !void {
-    try session.sink.respond(protobuf.gen.GetEquipDataScRsp, &.{});
+    const buffer_size = protobuf.pack.EquipInfoList.bufferSizeFor(Player.Equipment.count_max);
+    var buffer: [buffer_size]u8 align(protobuf.pack.EquipInfoList.alignment) = undefined;
+    var equip_list: protobuf.pack.EquipInfoList = .init(&buffer);
+
+    for (
+        session.player.equipment.uids(),
+        session.player.equipment.bits(),
+    ) |uid, bits| {
+        protobuf.pack.equipInfo(
+            equip_list.addOne(),
+            .{ .uid_maybe = .wrap(uid), .bits = bits },
+        );
+    }
+
+    try session.sink.respond(protobuf.gen.GetEquipDataScRsp, &.{
+        .equip_list = equip_list.items(.equip_info),
+    });
 }
 
 pub fn GetItemDataCsReq(session: *Session) !void {

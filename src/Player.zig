@@ -18,9 +18,10 @@ comptime {
 
 avatars: Avatar.List,
 weapons: Weapon.List,
+equipment: Equipment.List,
 
 pub const Header = extern struct {
-    pub const current_version: u32 = 3;
+    pub const current_version: u32 = 4;
 
     comptime {
         assert(hasUniqueRepresentation(@This()));
@@ -30,6 +31,8 @@ pub const Header = extern struct {
     avatar_count: u32,
     weapon_count: u32,
     weapon_uid_counter: u32,
+    equipment_count: u32,
+    equipment_uid_counter: u32,
 };
 
 pub const Avatar = struct {
@@ -293,10 +296,178 @@ pub const Weapon = struct {
     };
 };
 
+pub const Equipment = struct {
+    uid_maybe: Uid.Optional,
+    bits: Bits,
+
+    pub const count_max = 3_000;
+
+    pub const Bits = extern struct {
+        id: Id,
+        main_property: Property,
+        sub_properties: [Property.sub_count]Property.Optional,
+        _: u16 = 0,
+
+        comptime {
+            assert(hasUniqueRepresentation(@This()));
+        }
+    };
+
+    pub const Property = extern struct {
+        key: Key,
+        base: u16,
+        add: u16,
+
+        comptime {
+            assert(hasUniqueRepresentation(@This()));
+        }
+
+        pub const sub_count = 4;
+
+        pub const Key = enum(u16) {
+            _,
+
+            pub const Optional = enum(u16) {
+                none = 0,
+                _,
+
+                pub fn wrap(key: Key) Key.Optional {
+                    assert(@backingInt(key) != @backingInt(Key.Optional.none));
+                    return @fromBackingInt(@backingInt(key));
+                }
+
+                pub fn unwrap(key_maybe: Key.Optional) ?Key {
+                    return switch (key_maybe) {
+                        .none => null,
+                        _ => |key| @fromBackingInt(@backingInt(key)),
+                    };
+                }
+            };
+        };
+
+        pub const Optional = extern struct {
+            key_maybe: Key.Optional,
+            /// If `key_maybe` is `none`, this is `undefined`.
+            base: u16,
+            /// If `key_maybe` is `none`, this is `undefined`.
+            add: u16,
+
+            comptime {
+                assert(hasUniqueRepresentation(@This()));
+                assert(@sizeOf(Optional) == @sizeOf(Property));
+            }
+
+            pub const none: Optional = .{
+                .key_maybe = .none,
+                .base = 0,
+                .add = 0,
+            };
+
+            pub fn wrap(property: Property) Optional {
+                return .{
+                    .key_maybe = .wrap(property.key),
+                    .base = property.base,
+                    .add = property.add,
+                };
+            }
+
+            pub fn unwrap(property_maybe: Optional) ?Property {
+                if (property_maybe.key_maybe.unwrap()) |key|
+                    return .{
+                        .key = key,
+                        .base = property_maybe.base,
+                        .add = property_maybe.add,
+                    };
+
+                return null;
+            }
+        };
+    };
+
+    pub const Id = enum(u32) {
+        _,
+
+        pub fn fromInt(id_int: u32) ?Id {
+            if (templates.Equipment.table.getIndexByKey(id_int)) |_|
+                return @fromBackingInt(id_int);
+
+            return null;
+        }
+    };
+
+    pub const Uid = enum(u32) {
+        _,
+
+        pub const Optional = enum(u32) {
+            none = 0,
+            _,
+
+            pub fn wrap(uid: Uid) Optional {
+                return @fromBackingInt(@backingInt(uid));
+            }
+
+            pub fn unwrap(uid_maybe: Optional) ?Uid {
+                return switch (uid_maybe) {
+                    .none => null,
+                    else => |uid| @fromBackingInt(@backingInt(uid)),
+                };
+            }
+        };
+    };
+
+    pub const List = struct {
+        count: u32,
+        uid_counter: u32,
+        bits_buffer: [count_max]Equipment.Bits,
+        uids_buffer: [count_max]Equipment.Uid,
+
+        pub const empty: List = .{
+            .count = 0,
+            .uid_counter = 0,
+            .bits_buffer = undefined,
+            .uids_buffer = undefined,
+        };
+
+        pub fn uids(list: *List) []Equipment.Uid {
+            return list.uids_buffer[0..list.count];
+        }
+
+        pub fn bits(list: *List) []Equipment.Bits {
+            return list.bits_buffer[0..list.count];
+        }
+
+        pub fn getIndexByUid(list: *List, uid: Equipment.Uid) ?u32 {
+            if (mem.findScalar(Uid, list.uids(), uid)) |index_usize|
+                return @intCast(index_usize);
+
+            return null;
+        }
+
+        pub fn add(list: *List, equipment: Equipment) error{NoSpaceLeft}!Equipment.Uid {
+            assert(equipment.uid_maybe == .none); // uid is not known before `add`
+
+            if (list.count == count_max) return error.NoSpaceLeft;
+            errdefer comptime unreachable;
+
+            const index = list.count;
+            defer list.count += 1;
+
+            list.uid_counter += 1;
+            const uid: Uid = @fromBackingInt(list.uid_counter);
+
+            list.uids_buffer[index] = uid;
+            list.bits_buffer[index] = equipment.bits;
+
+            return uid;
+        }
+    };
+};
+
 pub fn initDefaults(player: *Player) void {
     player.* = .{
         .avatars = .empty,
         .weapons = .empty,
+        .equipment = .empty,
     };
 
     const avatar_bits_maxed_out: Avatar.Bits = .{
@@ -328,10 +499,25 @@ pub fn initDefaults(player: *Player) void {
             error.NoSpaceLeft => unreachable,
         };
     }
+
+    for (templates.Equipment.table.items(.id)) |id_int| {
+        const id = Equipment.Id.fromInt(id_int) orelse continue;
+
+        _ = player.equipment.add(.{
+            .uid_maybe = .none,
+            .bits = .{
+                .id = id,
+                .main_property = .{ .key = @fromBackingInt(11103), .base = 550, .add = 0 },
+                .sub_properties = @splat(.none),
+            },
+        }) catch |err| switch (err) {
+            error.NoSpaceLeft => unreachable,
+        };
+    }
 }
 
 pub fn saveToFile(player: *Player, io: Io, dir: Io.Dir, sub_path: []const u8) !void {
-    var vecs_buffer: [6][]const u8 = undefined;
+    var vecs_buffer: [8][]const u8 = undefined;
     var vecs: std.ArrayList([]const u8) = .initBuffer(&vecs_buffer);
 
     const header: Header = .{
@@ -339,6 +525,8 @@ pub fn saveToFile(player: *Player, io: Io, dir: Io.Dir, sub_path: []const u8) !v
         .avatar_count = player.avatars.count,
         .weapon_count = player.weapons.count,
         .weapon_uid_counter = player.weapons.uid_counter,
+        .equipment_count = player.equipment.count,
+        .equipment_uid_counter = player.equipment.uid_counter,
     };
 
     vecs.appendAssumeCapacity(@ptrCast(&header));
@@ -347,6 +535,8 @@ pub fn saveToFile(player: *Player, io: Io, dir: Io.Dir, sub_path: []const u8) !v
     vecs.appendAssumeCapacity(@ptrCast(player.avatars.weaponUids()));
     vecs.appendAssumeCapacity(@ptrCast(player.weapons.bits()));
     vecs.appendAssumeCapacity(@ptrCast(player.weapons.uids()));
+    vecs.appendAssumeCapacity(@ptrCast(player.equipment.bits()));
+    vecs.appendAssumeCapacity(@ptrCast(player.equipment.uids()));
 
     var af = try dir.createFileAtomic(io, sub_path, .{ .replace = true });
     defer af.deinit(io);
@@ -471,7 +661,14 @@ pub fn loadFromFile(
             .encountered = header.weapon_count,
         });
 
-    var vecs_buffer: [5][]u8 = undefined;
+    if (header.equipment_count > Equipment.count_max)
+        return diag.fail(.limit_exceeded, .{
+            .name = "equipment",
+            .limit = Equipment.count_max,
+            .encountered = header.equipment_count,
+        });
+
+    var vecs_buffer: [7][]u8 = undefined;
     var vecs: std.ArrayList([]u8) = .initBuffer(&vecs_buffer);
 
     player.avatars.count = header.avatar_count;
@@ -483,6 +680,11 @@ pub fn loadFromFile(
     player.weapons.uid_counter = header.weapon_uid_counter;
     vecs.appendAssumeCapacity(@ptrCast(player.weapons.bits()));
     vecs.appendAssumeCapacity(@ptrCast(player.weapons.uids()));
+
+    player.equipment.count = header.equipment_count;
+    player.equipment.uid_counter = header.equipment_uid_counter;
+    vecs.appendAssumeCapacity(@ptrCast(player.equipment.bits()));
+    vecs.appendAssumeCapacity(@ptrCast(player.equipment.uids()));
 
     file_reader.interface.readVecAll(vecs.items) catch |err| switch (err) {
         error.EndOfStream => return diag.fileSystem(error.EarlyEos),

@@ -3,6 +3,7 @@ const std = @import("std");
 const eldreda = @import("../eldreda.zig");
 const Player = eldreda.Player;
 const gen = eldreda.protobuf.gen;
+const StaticMultiArrayList = eldreda.StaticMultiArrayList;
 
 const Skill = enum(u8) {
     common_attack = 0,
@@ -50,5 +51,40 @@ pub fn weaponInfo(out: *gen.WeaponInfo, weapon: Player.Weapon) void {
         .level = 60,
         .star = 5,
         .refine_level = 1,
+    };
+}
+
+pub const EquipInfoList = StaticMultiArrayList(struct {
+    equip_info: gen.EquipInfo,
+    main_property: gen.EquipProperty,
+    sub_properties_buffer: [Player.Equipment.Property.sub_count]gen.EquipProperty,
+});
+
+pub fn equipInfo(out: EquipInfoList.Ptr, equipment: Player.Equipment) void {
+    out.main_property.* = .{
+        .key = @backingInt(equipment.bits.main_property.key),
+        .base_value = equipment.bits.main_property.base,
+        .add_value = equipment.bits.main_property.add,
+    };
+
+    var sub_property_list: std.ArrayList(gen.EquipProperty) =
+        .initBuffer(out.sub_properties_buffer);
+
+    for (equipment.bits.sub_properties) |property_maybe| {
+        const property = property_maybe.unwrap() orelse continue;
+        sub_property_list.appendAssumeCapacity(.{
+            .key = @backingInt(property.key),
+            .base_value = property.base,
+            .add_value = property.add,
+        });
+    }
+
+    out.equip_info.* = .{
+        .uid = @backingInt(equipment.uid_maybe.unwrap().?),
+        .id = @backingInt(equipment.bits.id),
+        .level = 15,
+        .star = 5,
+        .propertys = out.main_property[0..1],
+        .sub_propertys = sub_property_list.items,
     };
 }

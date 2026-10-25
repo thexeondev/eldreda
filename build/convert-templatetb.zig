@@ -38,6 +38,7 @@ const template_tb_list: []const struct { []const u8, type } = &.{
     .{ "AvatarBaseTemplateTb", AvatarBaseTemplate },
     .{ "UnlockConfigTemplateTb", UnlockConfigTemplate },
     .{ "WeaponTemplateTb", WeaponTemplate },
+    .{ "EquipmentTemplateTb", EquipmentTemplate },
 };
 
 const AvatarBaseTemplate = struct {
@@ -84,6 +85,14 @@ const WeaponTemplate = struct {
     const Fbs = struct {
         id: fbs.Int(u32),
         weapon_name: fbs.String,
+    };
+};
+
+const EquipmentTemplate = struct {
+    id: u32,
+
+    const Fbs = struct {
+        id: fbs.Int(u32),
     };
 };
 

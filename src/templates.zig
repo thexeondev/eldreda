@@ -25,6 +25,13 @@ pub const Weapon = struct {
     weapon_name: String,
 };
 
+pub const Equipment = struct {
+    pub const Table = TemplateTb(Equipment, "EquipmentTemplateTb", .id);
+    pub const table: Table = .init();
+
+    id: u32,
+};
+
 pub const String = enum(u32) {
     empty = std.math.maxInt(u32),
     _,
