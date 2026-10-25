@@ -24,7 +24,7 @@ If the compilation succeeds, the server executable should appear in the `zig-out
 ## Configuration
 To start the server, simply run the `eldreda` executable.
 
-To see the available command-line options, run `eldreda --help`.
+To see the available commands and their options, run `eldreda --help`.
 
 Some options can be customized through a configuration file. Default settings are declared in [defaults/eldreda.zon](defaults/eldreda.zon).
 
