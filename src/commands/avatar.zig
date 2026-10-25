@@ -145,8 +145,6 @@ pub fn EquipmentDressCsReq(session: *Session) !void {
         session.player.avatars.get(request.avatar_id) orelse
         return session.sink.respondMinimal(.EquipmentDressScRsp, .{ .retcode = 1 });
 
-    session.playerModified();
-
     const avatar_buffer_size = protobuf.pack.AvatarInfoList.bufferSizeFor(2);
     var avatar_buffer: [avatar_buffer_size]u8 align(protobuf.pack.AvatarInfoList.alignment) =
         undefined;
@@ -162,6 +160,8 @@ pub fn EquipmentDressCsReq(session: *Session) !void {
 
         protobuf.pack.avatarInfo(avatar_sync.addOne(), avatar_to_undress);
     }
+
+    session.playerModified();
 
     avatar_to_dress.dressed_equipment[dress_index] = .wrap(equipment_uid);
     session.player.avatars.replaceAt(avatar_to_dress_index, avatar_to_dress);
@@ -212,4 +212,51 @@ pub fn EquipmentUnDressCsReq(session: *Session) !void {
     }
 
     return session.sink.respondMinimal(.EquipmentUnDressScRsp, .{ .retcode = 0 });
+}
+
+pub fn EquipmentSuitDressCsReq(session: *Session) !void {
+    var request = try session.command.decodeBody(protobuf.gen.EquipmentSuitDressCsReq.Decoded);
+
+    const avatar_to_dress_index, var avatar_to_dress =
+        session.player.avatars.get(request.avatar_id) orelse
+        return session.sink.respondMinimal(.EquipmentSuitDressScRsp, .{ .retcode = 1 });
+
+    var dressed_count: usize = 0;
+    while (try request.param_list.next()) |dress_param| {
+        defer dressed_count += 1;
+
+        if (dressed_count == Player.Avatar.equipment_count)
+            return session.sink.respondMinimal(.EquipmentSuitDressScRsp, .{ .retcode = 1 });
+
+        if (dress_param.dress_index < 1 or dress_param.dress_index > Player.Avatar.equipment_count)
+            return session.sink.respondMinimal(.EquipmentSuitDressScRsp, .{ .retcode = 1 });
+        const dress_index = dress_param.dress_index - 1;
+
+        const equipment_uid: Player.Equipment.Uid = @fromBackingInt(dress_param.equip_uid);
+        if (session.player.equipment.getIndexByUid(equipment_uid) == null)
+            return session.sink.respondMinimal(.EquipmentSuitDressScRsp, .{ .retcode = 1 });
+
+        if (session.player.avatars.getIndexByEquipmentUid(equipment_uid) != null)
+            return session.sink.respondMinimal(.EquipmentSuitDressScRsp, .{ .retcode = 1 });
+
+        avatar_to_dress.dressed_equipment[dress_index] = .wrap(equipment_uid);
+    }
+
+    if (dressed_count != 0) {
+        session.player.avatars.replaceAt(avatar_to_dress_index, avatar_to_dress);
+        session.playerModified();
+
+        const avatar_buffer_size = protobuf.pack.AvatarInfoList.bufferSizeFor(1);
+        var avatar_buffer: [avatar_buffer_size]u8 align(protobuf.pack.AvatarInfoList.alignment) =
+            undefined;
+        var avatar_list: protobuf.pack.AvatarInfoList = .init(&avatar_buffer);
+
+        protobuf.pack.avatarInfo(avatar_list.addOne(), avatar_to_dress);
+
+        try session.sink.notify(protobuf.gen.PlayerSyncScNotify, &.{
+            .avatar = .{ .avatar_list = avatar_list.items(.avatar_info) },
+        });
+    }
+
+    return session.sink.respondMinimal(.EquipmentSuitDressScRsp, .{ .retcode = 0 });
 }

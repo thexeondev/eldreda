@@ -71,10 +71,6 @@ pub fn StaticMultiArrayList(comptime Struct: type) type {
             return size_of_one * n;
         }
 
-        pub fn Buffer(comptime n: usize) type {
-            return [bufferSizeFor(n)]u8;
-        }
-
         pub fn init(buffer: []align(alignment) u8) List {
             const n = @divExact(buffer.len, size_of_one);
 
