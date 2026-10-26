@@ -19,6 +19,7 @@ pub fn build(b: *Build) void {
     });
     convertTemplates(b, module);
     importFile(b, module, "defaults/eldreda.zon");
+    importFile(b, module, "assets/textmap.bin");
     const module_tests = b.addTest(.{ .root_module = module });
     test_step.dependOn(&b.addRunArtifact(module_tests).step);
 
@@ -44,6 +45,11 @@ pub fn build(b: *Build) void {
     serve_step.dependOn(&run_exe.step);
 
     if (maybeCompileProto(b)) |step| {
+        exe.step.dependOn(step);
+        module_tests.step.dependOn(step);
+    }
+
+    if (maybeConvertTextMap(b)) |step| {
         exe.step.dependOn(step);
         module_tests.step.dependOn(step);
     }
@@ -83,6 +89,31 @@ fn maybeCompileProto(b: *Build) ?*Build.Step {
     update.addCopyFileToSource(
         run.captureStdOut(.{ .basename = "generated.zig" }),
         "src/protobuf/generated.zig",
+    );
+    return &update.step;
+}
+
+const textmap_raw_path = "assets/TextMap_EnTemplateTb.bin";
+
+fn maybeConvertTextMap(b: *Build) ?*Build.Step {
+    b.root.access(b.graph.io, textmap_raw_path, .{ .read = true }) catch return null;
+
+    const converter = b.addExecutable(.{
+        .name = "eldreda-convert-textmap",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("build/convert-textmap.zig"),
+            .target = b.graph.host,
+            .optimize = .debug,
+        }),
+    });
+    const convert = b.addRunArtifact(converter);
+    convert.expectExitCode(0);
+    convert.addFileArg2(b.path(textmap_raw_path), .{});
+
+    const update = b.addUpdateSourceFiles();
+    update.addCopyFileToSource(
+        convert.captureStdOut(.{ .basename = "textmap.bin" }),
+        "assets/textmap.bin",
     );
     return &update.step;
 }

@@ -44,13 +44,14 @@ const template_tb_list: []const struct { []const u8, type } = &.{
 
 const AvatarBaseTemplate = struct {
     id: u32,
+    code_name: String,
     audio_event_replace_param: String,
     unlockable: bool,
 
     // TODO: bonus points for build/compile-fbs.zig
     const Fbs = struct {
         id: fbs.Int(u32),
-        code_name: fbs.Discard,
+        code_name: fbs.String,
         name: fbs.Discard,
         full_name: fbs.Discard,
         audio_event_replace_param: fbs.String,
@@ -104,10 +105,6 @@ const EquipmentSuitTemplate = struct {
         id: fbs.Int(u32),
     };
 };
-
-fn TemplateTb(comptime Template: type) type {
-    return struct { data: []const Template };
-}
 
 fn fieldsOrderedByAlignment(comptime T: type) bool {
     const field_types = @typeInfo(T).@"struct".field_types;

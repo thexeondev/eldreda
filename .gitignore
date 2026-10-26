@@ -3,3 +3,5 @@ zig-out/
 .zig-cache/
 eldreda-storage/
 proto/
+
+assets/TextMap_EnTemplateTb.bin

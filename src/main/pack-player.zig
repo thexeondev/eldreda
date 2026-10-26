@@ -6,6 +6,7 @@ const Allocator = std.mem.Allocator;
 
 const eldreda = @import("eldreda");
 const Player = eldreda.Player;
+const templates = eldreda.templates;
 
 const log = std.log.scoped(.@"eldreda-pack-player");
 
@@ -58,6 +59,12 @@ pub fn run(io: Io, gpa: Allocator, args_slice: []const []const u8) !void {
         break :default_path try arena.print("{s}.bin", .{Io.Dir.path.stem(basename)});
     };
 
+    var text_map: templates.Text.Map = try .init(gpa);
+    defer text_map.deinit(gpa);
+
+    var name_map: Player.Zon.NameMap = try .init(gpa, &text_map);
+    defer name_map.deinit(gpa);
+
     const player_zon_contents = Io.Dir.cwd().readFileAllocOptions(
         io,
         input_path,
@@ -91,7 +98,7 @@ pub fn run(io: Io, gpa: Allocator, args_slice: []const []const u8) !void {
     };
 
     var pack_diag: Player.Zon.PackDiagnostics = undefined;
-    var player = player_zon.pack(&pack_diag) catch |err| switch (err) {
+    var player = player_zon.pack(&name_map, &pack_diag) catch |err| switch (err) {
         error.CheckDiagnostics => {
             log.err("player data is invalid:\n{f}", .{&pack_diag});
             process.exit(1);

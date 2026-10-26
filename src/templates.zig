@@ -1,11 +1,13 @@
 const std = @import("std");
 const mem = std.mem;
+const Allocator = std.mem.Allocator;
 
 pub const AvatarBase = struct {
     pub const Table = TemplateTb(AvatarBase, "AvatarBaseTemplateTb", .id);
     pub const table: Table = .init();
 
     id: u32,
+    code_name: String,
     audio_event_replace_param: String,
     unlockable: bool,
 };
@@ -37,6 +39,38 @@ pub const EquipmentSuit = struct {
     pub const table: Table = .init();
 
     id: u32,
+};
+
+pub const Text = struct {
+    pub const Table = TemplateTb(Text, "assets/textmap.bin", .key);
+    pub const table: Table = .init();
+
+    key: String,
+    value: String,
+
+    pub const Map = struct {
+        inner: std.array_hash_map.String([]const u8),
+
+        pub fn init(gpa: Allocator) Allocator.Error!Map {
+            var map: std.array_hash_map.String([]const u8) = .empty;
+            try map.ensureTotalCapacity(gpa, table.count);
+            errdefer comptime unreachable;
+
+            for (table.items(.key), table.items(.value)) |key, value| {
+                map.putAssumeCapacity(table.getString(key), table.getString(value));
+            }
+
+            return .{ .inner = map };
+        }
+
+        pub fn deinit(textmap: *Text.Map, gpa: Allocator) void {
+            textmap.inner.deinit(gpa);
+        }
+
+        pub fn get(textmap: *const Text.Map, key: []const u8) ?[]const u8 {
+            return textmap.inner.get(key);
+        }
+    };
 };
 
 pub const String = enum(u32) {

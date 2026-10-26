@@ -6,6 +6,7 @@ const Allocator = std.mem.Allocator;
 
 const eldreda = @import("eldreda");
 const Player = eldreda.Player;
+const templates = eldreda.templates;
 
 const log = std.log.scoped(.@"eldreda-print-player");
 
@@ -58,6 +59,12 @@ pub fn run(io: Io, gpa: Allocator, args_slice: []const []const u8) !void {
         break :default_path try arena.print("{s}.zon", .{Io.Dir.path.stem(basename)});
     };
 
+    var text_map: templates.Text.Map = try .init(gpa);
+    defer text_map.deinit(gpa);
+
+    var name_map: Player.Zon.NameMap = try .init(gpa, &text_map);
+    defer name_map.deinit(gpa);
+
     var player: Player = undefined;
     var player_diag: Player.LoadDiagnostics = undefined;
     player.loadFromFile(io, .{
@@ -76,7 +83,7 @@ pub fn run(io: Io, gpa: Allocator, args_slice: []const []const u8) !void {
         },
     };
 
-    const player_zon: Player.Zon = try .init(arena, &player);
+    const player_zon: Player.Zon = try .init(arena, &name_map, &player);
 
     const output_file = Io.Dir.cwd().createFile(io, output_path, .{}) catch |err| {
         log.err("failed to create output file {q}: {t}", .{ output_path, err });

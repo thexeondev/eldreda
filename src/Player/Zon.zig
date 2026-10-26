@@ -8,13 +8,50 @@ const Allocator = std.mem.Allocator;
 
 const eldreda = @import("../eldreda.zig");
 const Player = eldreda.Player;
+const templates = eldreda.templates;
 
 avatars: []Avatar,
 weapons_undressed: []Weapon,
 equipment_undressed: []Equipment,
 
+pub const NameMap = struct {
+    avatar_id_by_name: std.array_hash_map.String(Player.Avatar.Id),
+    avatar_name_by_id: std.array_hash_map.Auto(Player.Avatar.Id, []const u8),
+
+    pub fn init(gpa: Allocator, text_map: *const templates.Text.Map) Allocator.Error!NameMap {
+        var avatar_id_by_name: std.array_hash_map.String(Player.Avatar.Id) = .empty;
+        defer avatar_id_by_name.deinit(gpa);
+
+        var avatar_name_by_id: std.array_hash_map.Auto(Player.Avatar.Id, []const u8) = .empty;
+        defer avatar_name_by_id.deinit(gpa);
+
+        for (
+            templates.AvatarBase.table.items(.id),
+            templates.AvatarBase.table.items(.code_name),
+        ) |id_int, code_name| {
+            const id = Player.Avatar.Id.fromInt(id_int) orelse continue;
+
+            const code_name_slice = templates.AvatarBase.table.getString(code_name);
+            const code_name_text = text_map.get(code_name_slice) orelse code_name_slice;
+
+            try avatar_id_by_name.putNoClobber(gpa, code_name_text, id);
+            try avatar_name_by_id.putNoClobber(gpa, id, code_name_text);
+        }
+
+        return .{
+            .avatar_id_by_name = avatar_id_by_name.move(),
+            .avatar_name_by_id = avatar_name_by_id.move(),
+        };
+    }
+
+    pub fn deinit(name_map: *NameMap, gpa: Allocator) void {
+        name_map.avatar_id_by_name.deinit(gpa);
+        name_map.avatar_name_by_id.deinit(gpa);
+    }
+};
+
 pub const Avatar = struct {
-    id: u32,
+    name: []const u8,
     level: u32,
     rank: u32,
     favorite: bool,
@@ -131,7 +168,7 @@ pub const Equipment = struct {
     }
 };
 
-pub fn init(arena: Allocator, player: *Player) Allocator.Error!Zon {
+pub fn init(arena: Allocator, name_map: *const NameMap, player: *Player) Allocator.Error!Zon {
     const avatars = try arena.alloc(Avatar, player.avatars.count);
 
     for (
@@ -166,7 +203,7 @@ pub fn init(arena: Allocator, player: *Player) Allocator.Error!Zon {
         }
 
         avatar_zon.* = .{
-            .id = @backingInt(id),
+            .name = name_map.avatar_name_by_id.get(id).?,
             .level = bits.level_up.getLevel(),
             .rank = bits.level_up.getRank(),
             .favorite = bits.flags.favorite,
@@ -213,11 +250,15 @@ pub const PackDiagnostics = union(enum) {
         kind: []const u8,
         id: u32,
     },
+    name_invalid: struct {
+        kind: []const u8,
+        name: []const u8,
+    },
     avatar_duplicated: struct {
-        avatar_id: u32,
+        avatar_name: []const u8,
     },
     avatar_level_up_invalid: struct {
-        avatar_id: u32,
+        avatar_name: []const u8,
         rank: u32,
         level: u32,
     },
@@ -232,13 +273,17 @@ pub const PackDiagnostics = union(enum) {
                 "invalid {s} id: {d}",
                 .{ details.kind, details.id },
             ),
+            .name_invalid => |details| return writer.print(
+                "invalid {s} name: {q}",
+                .{ details.kind, details.name },
+            ),
             .avatar_duplicated => |details| return writer.print(
-                "duplicated avatar with id {d}",
-                .{details.avatar_id},
+                "duplicated avatar {q}",
+                .{details.avatar_name},
             ),
             .avatar_level_up_invalid => |details| return writer.print(
-                "avatar with id {d} has an invalid rank and level combination ({d}, {d})",
-                .{ details.avatar_id, details.rank, details.level },
+                "avatar {q} has an invalid rank and level combination ({d}, {d})",
+                .{ details.avatar_name, details.rank, details.level },
             ),
         }
     }
@@ -255,7 +300,11 @@ pub const PackDiagnostics = union(enum) {
 
 pub const PackError = error{CheckDiagnostics};
 
-pub fn pack(zon: *const Player.Zon, diag: *PackDiagnostics) PackError!Player {
+pub fn pack(
+    zon: *const Player.Zon,
+    name_map: *const NameMap,
+    diag: *PackDiagnostics,
+) PackError!Player {
     var player: Player = .{
         .avatars = .empty,
         .weapons = .empty,
@@ -297,16 +346,16 @@ pub fn pack(zon: *const Player.Zon, diag: *PackDiagnostics) PackError!Player {
         }
 
         const avatar: Player.Avatar = .{
-            .id = Player.Avatar.Id.fromInt(avatar_zon.id) orelse return diag.fail(
-                .id_invalid,
-                .{ .kind = "avatar", .id = avatar_zon.id },
+            .id = name_map.avatar_id_by_name.get(avatar_zon.name) orelse return diag.fail(
+                .name_invalid,
+                .{ .kind = "avatar", .name = avatar_zon.name },
             ),
             .bits = .{
                 .level_up = Player.Avatar.LevelUp.fromRankAndLevel(
                     avatar_zon.rank,
                     avatar_zon.level,
                 ) orelse return diag.fail(.avatar_level_up_invalid, .{
-                    .avatar_id = avatar_zon.id,
+                    .avatar_name = avatar_zon.name,
                     .rank = avatar_zon.rank,
                     .level = avatar_zon.level,
                 }),
@@ -324,7 +373,7 @@ pub fn pack(zon: *const Player.Zon, diag: *PackDiagnostics) PackError!Player {
         };
 
         if (result.found_existing) return diag.fail(.avatar_duplicated, .{
-            .avatar_id = avatar_zon.id,
+            .avatar_name = avatar_zon.name,
         });
     }
 
