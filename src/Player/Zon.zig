@@ -197,26 +197,101 @@ pub const Equipment = struct {
     };
 
     pub const Property = struct {
-        key: u16,
+        key: []const u8,
         base: u16,
         add: u16,
 
         fn init(data: Player.Equipment.Property) Property {
+            const key: Key = @fromBackingInt(@backingInt(data.key));
+
             return .{
-                .key = @backingInt(data.key),
+                .key = Key.names.get(key),
                 .base = data.base,
                 .add = data.add,
             };
         }
 
         fn pack(property: Property, diag: *PackDiagnostics) PackError!Player.Equipment.Property {
-            _ = diag;
+            const key = Key.by_name.get(property.key) orelse return diag.fail(
+                .name_invalid,
+                .{ .kind = "property key", .name = property.key },
+            );
+
             return .{
-                .key = @fromBackingInt(property.key),
+                .key = @fromBackingInt(@backingInt(key)),
                 .base = property.base,
                 .add = property.add,
             };
         }
+
+        pub const Key = enum(u16) {
+            HpMax = 11103,
+            HpMax_Ratio = 11102,
+            Atk = 12103,
+            Atk_Ratio = 12102,
+            Def = 13103,
+            Def_Ratio = 13102,
+            PenDelta = 23203,
+            PenRatio = 23103,
+            ElementAbnormalPower = 31402,
+            ElementMystery = 31203,
+            CritDmg = 21103,
+            Crit = 20103,
+            SpRecover = 30502,
+            BreakStun = 12202,
+            AddedDamageRatioElec = 31803,
+            AddedDamageRatioEther = 31903,
+            AddedDamageRatioFire = 31603,
+            AddedDamageRatioIce = 31703,
+            AddedDamageRatioPhysics = 31503,
+            AddedDamageRatioWind = 32303,
+
+            pub const by_name: std.StaticStringMap(Key) = .initComptime(&.{
+                .{ "HP", .HpMax },
+                .{ "Percent HP", .HpMax_Ratio },
+                .{ "ATK", .Atk },
+                .{ "Percent ATK", .Atk_Ratio },
+                .{ "DEF", .Def },
+                .{ "Percent DEF", .Def_Ratio },
+                .{ "PEN", .PenDelta },
+                .{ "PEN Ratio", .PenRatio },
+                .{ "Anomaly Mastery", .ElementAbnormalPower },
+                .{ "Anomaly Proficiency", .ElementMystery },
+                .{ "CRIT DMG", .CritDmg },
+                .{ "CRIT Rate", .Crit },
+                .{ "Energy Regen", .SpRecover },
+                .{ "Impact", .BreakStun },
+                .{ "Electric DMG Bonus", .AddedDamageRatioElec },
+                .{ "Ether DMG Bonus", .AddedDamageRatioEther },
+                .{ "Fire DMG Bonus", .AddedDamageRatioFire },
+                .{ "Ice DMG Bonus", .AddedDamageRatioIce },
+                .{ "Physical DMG Bonus", .AddedDamageRatioPhysics },
+                .{ "Wind DMG Bonus", .AddedDamageRatioWind },
+            });
+
+            pub const names: std.EnumArray(Key, []const u8) = .init(.{
+                .HpMax = "HP",
+                .HpMax_Ratio = "Percent HP",
+                .Atk = "ATK",
+                .Atk_Ratio = "Percent ATK",
+                .Def = "DEF",
+                .Def_Ratio = "Percent DEF",
+                .PenDelta = "PEN",
+                .PenRatio = "PEN Ratio",
+                .ElementAbnormalPower = "Anomaly Mastery",
+                .ElementMystery = "Anomaly Proficiency",
+                .CritDmg = "CRIT DMG",
+                .Crit = "CRIT Rate",
+                .SpRecover = "Energy Regen",
+                .BreakStun = "Impact",
+                .AddedDamageRatioElec = "Electric DMG Bonus",
+                .AddedDamageRatioEther = "Ether DMG Bonus",
+                .AddedDamageRatioFire = "Fire DMG Bonus",
+                .AddedDamageRatioIce = "Ice DMG Bonus",
+                .AddedDamageRatioPhysics = "Physical DMG Bonus",
+                .AddedDamageRatioWind = "Wind DMG Bonus",
+            });
+        };
     };
 
     fn init(data: Player.Equipment, name_map: *const NameMap) Equipment {
