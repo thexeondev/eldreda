@@ -175,7 +175,7 @@ pub const Weapon = struct {
 
 pub const Equipment = struct {
     id: Id,
-    main_property: Property,
+    main_property: MainProperty,
     sub_properties: SubProperties,
 
     pub const Id = struct {
@@ -190,108 +190,176 @@ pub const Equipment = struct {
     };
 
     pub const SubProperties = struct {
-        @"1": ?Property,
-        @"2": ?Property,
-        @"3": ?Property,
-        @"4": ?Property,
+        @"1": ?SubProperty,
+        @"2": ?SubProperty,
+        @"3": ?SubProperty,
+        @"4": ?SubProperty,
     };
 
-    pub const Property = struct {
+    pub const MainProperty = struct {
         key: []const u8,
-        base: u16,
-        add: u16,
 
-        fn init(data: Player.Equipment.Property) Property {
+        fn init(data: Player.Equipment.Property) MainProperty {
             const key: Key = @fromBackingInt(@backingInt(data.key));
 
-            return .{
-                .key = Key.names.get(key),
-                .base = data.base,
-                .add = data.add,
-            };
+            return .{ .key = Key.names.get(key) };
         }
 
-        fn pack(property: Property, diag: *PackDiagnostics) PackError!Player.Equipment.Property {
-            const key = Key.by_name.get(property.key) orelse return diag.fail(
+        fn pack(
+            main_property: MainProperty,
+            diag: *PackDiagnostics,
+        ) PackError!Player.Equipment.Property {
+            const key = Key.by_name.get(main_property.key) orelse return diag.fail(
                 .name_invalid,
-                .{ .kind = "property key", .name = property.key },
+                .{ .kind = "main property key", .name = main_property.key },
             );
 
             return .{
                 .key = @fromBackingInt(@backingInt(key)),
-                .base = property.base,
-                .add = property.add,
+                .base = base_by_key.get(key) orelse return diag.fail(
+                    .name_invalid,
+                    .{ .kind = "main property key", .name = main_property.key },
+                ),
+                .add = 1,
             };
         }
 
-        pub const Key = enum(u16) {
-            HpMax = 11103,
-            HpMax_Ratio = 11102,
-            Atk = 12103,
-            Atk_Ratio = 12102,
-            Def = 13103,
-            Def_Ratio = 13102,
-            PenDelta = 23203,
-            PenRatio = 23103,
-            ElementAbnormalPower = 31402,
-            ElementMystery = 31203,
-            CritDmg = 21103,
-            Crit = 20103,
-            SpRecover = 30502,
-            BreakStun = 12202,
-            AddedDamageRatioElec = 31803,
-            AddedDamageRatioEther = 31903,
-            AddedDamageRatioFire = 31603,
-            AddedDamageRatioIce = 31703,
-            AddedDamageRatioPhysics = 31503,
-            AddedDamageRatioWind = 32303,
+        const base_by_key: std.EnumMap(Key, u16) = .init(.{
+            .HpMax = 550,
+            .HpMax_Ratio = 750,
+            .Atk = 79,
+            .Atk_Ratio = 750,
+            .Def = 46,
+            .Def_Ratio = 1200,
+            .PenRatio = 600,
+            .ElementAbnormalPower = 750,
+            .ElementMystery = 23,
+            .CritDmg = 1200,
+            .Crit = 600,
+            .SpRecover = 1500,
+            .BreakStun = 450,
+            .AddedDamageRatioElec = 750,
+            .AddedDamageRatioEther = 750,
+            .AddedDamageRatioFire = 750,
+            .AddedDamageRatioIce = 750,
+            .AddedDamageRatioPhysics = 750,
+            .AddedDamageRatioWind = 750,
+        });
+    };
 
-            pub const by_name: std.StaticStringMap(Key) = .initComptime(&.{
-                .{ "HP", .HpMax },
-                .{ "Percent HP", .HpMax_Ratio },
-                .{ "ATK", .Atk },
-                .{ "Percent ATK", .Atk_Ratio },
-                .{ "DEF", .Def },
-                .{ "Percent DEF", .Def_Ratio },
-                .{ "PEN", .PenDelta },
-                .{ "PEN Ratio", .PenRatio },
-                .{ "Anomaly Mastery", .ElementAbnormalPower },
-                .{ "Anomaly Proficiency", .ElementMystery },
-                .{ "CRIT DMG", .CritDmg },
-                .{ "CRIT Rate", .Crit },
-                .{ "Energy Regen", .SpRecover },
-                .{ "Impact", .BreakStun },
-                .{ "Electric DMG Bonus", .AddedDamageRatioElec },
-                .{ "Ether DMG Bonus", .AddedDamageRatioEther },
-                .{ "Fire DMG Bonus", .AddedDamageRatioFire },
-                .{ "Ice DMG Bonus", .AddedDamageRatioIce },
-                .{ "Physical DMG Bonus", .AddedDamageRatioPhysics },
-                .{ "Wind DMG Bonus", .AddedDamageRatioWind },
-            });
+    pub const SubProperty = struct {
+        key: []const u8,
+        @"+": u16,
 
-            pub const names: std.EnumArray(Key, []const u8) = .init(.{
-                .HpMax = "HP",
-                .HpMax_Ratio = "Percent HP",
-                .Atk = "ATK",
-                .Atk_Ratio = "Percent ATK",
-                .Def = "DEF",
-                .Def_Ratio = "Percent DEF",
-                .PenDelta = "PEN",
-                .PenRatio = "PEN Ratio",
-                .ElementAbnormalPower = "Anomaly Mastery",
-                .ElementMystery = "Anomaly Proficiency",
-                .CritDmg = "CRIT DMG",
-                .Crit = "CRIT Rate",
-                .SpRecover = "Energy Regen",
-                .BreakStun = "Impact",
-                .AddedDamageRatioElec = "Electric DMG Bonus",
-                .AddedDamageRatioEther = "Ether DMG Bonus",
-                .AddedDamageRatioFire = "Fire DMG Bonus",
-                .AddedDamageRatioIce = "Ice DMG Bonus",
-                .AddedDamageRatioPhysics = "Physical DMG Bonus",
-                .AddedDamageRatioWind = "Wind DMG Bonus",
-            });
-        };
+        fn init(data: Player.Equipment.Property) SubProperty {
+            const key: Key = @fromBackingInt(@backingInt(data.key));
+
+            return .{
+                .key = Key.names.get(key),
+                .@"+" = data.add - 1,
+            };
+        }
+
+        fn pack(
+            sub_property: SubProperty,
+            diag: *PackDiagnostics,
+        ) PackError!Player.Equipment.Property {
+            const key = Key.by_name.get(sub_property.key) orelse return diag.fail(
+                .name_invalid,
+                .{ .kind = "sub property key", .name = sub_property.key },
+            );
+
+            return .{
+                .key = @fromBackingInt(@backingInt(key)),
+                .base = base_by_key.get(key) orelse return diag.fail(
+                    .name_invalid,
+                    .{ .kind = "sub property key", .name = sub_property.key },
+                ),
+                .add = sub_property.@"+" + 1,
+            };
+        }
+
+        const base_by_key: std.EnumMap(Key, u16) = .init(.{
+            .HpMax = 112,
+            .HpMax_Ratio = 300,
+            .Atk = 19,
+            .Atk_Ratio = 300,
+            .Def = 15,
+            .Def_Ratio = 480,
+            .PenDelta = 9,
+            .ElementMystery = 9,
+            .CritDmg = 480,
+            .Crit = 240,
+        });
+    };
+
+    pub const Key = enum(u16) {
+        HpMax = 11103,
+        HpMax_Ratio = 11102,
+        Atk = 12103,
+        Atk_Ratio = 12102,
+        Def = 13103,
+        Def_Ratio = 13102,
+        PenDelta = 23203,
+        PenRatio = 23103,
+        ElementAbnormalPower = 31402,
+        ElementMystery = 31203,
+        CritDmg = 21103,
+        Crit = 20103,
+        SpRecover = 30502,
+        BreakStun = 12202,
+        AddedDamageRatioElec = 31803,
+        AddedDamageRatioEther = 31903,
+        AddedDamageRatioFire = 31603,
+        AddedDamageRatioIce = 31703,
+        AddedDamageRatioPhysics = 31503,
+        AddedDamageRatioWind = 32303,
+
+        pub const by_name: std.StaticStringMap(Key) = .initComptime(&.{
+            .{ "HP", .HpMax },
+            .{ "Percent HP", .HpMax_Ratio },
+            .{ "ATK", .Atk },
+            .{ "Percent ATK", .Atk_Ratio },
+            .{ "DEF", .Def },
+            .{ "Percent DEF", .Def_Ratio },
+            .{ "PEN", .PenDelta },
+            .{ "PEN Ratio", .PenRatio },
+            .{ "Anomaly Mastery", .ElementAbnormalPower },
+            .{ "Anomaly Proficiency", .ElementMystery },
+            .{ "CRIT DMG", .CritDmg },
+            .{ "CRIT Rate", .Crit },
+            .{ "Energy Regen", .SpRecover },
+            .{ "Impact", .BreakStun },
+            .{ "Electric DMG Bonus", .AddedDamageRatioElec },
+            .{ "Ether DMG Bonus", .AddedDamageRatioEther },
+            .{ "Fire DMG Bonus", .AddedDamageRatioFire },
+            .{ "Ice DMG Bonus", .AddedDamageRatioIce },
+            .{ "Physical DMG Bonus", .AddedDamageRatioPhysics },
+            .{ "Wind DMG Bonus", .AddedDamageRatioWind },
+        });
+
+        pub const names: std.EnumArray(Key, []const u8) = .init(.{
+            .HpMax = "HP",
+            .HpMax_Ratio = "Percent HP",
+            .Atk = "ATK",
+            .Atk_Ratio = "Percent ATK",
+            .Def = "DEF",
+            .Def_Ratio = "Percent DEF",
+            .PenDelta = "PEN",
+            .PenRatio = "PEN Ratio",
+            .ElementAbnormalPower = "Anomaly Mastery",
+            .ElementMystery = "Anomaly Proficiency",
+            .CritDmg = "CRIT DMG",
+            .Crit = "CRIT Rate",
+            .SpRecover = "Energy Regen",
+            .BreakStun = "Impact",
+            .AddedDamageRatioElec = "Electric DMG Bonus",
+            .AddedDamageRatioEther = "Ether DMG Bonus",
+            .AddedDamageRatioFire = "Fire DMG Bonus",
+            .AddedDamageRatioIce = "Ice DMG Bonus",
+            .AddedDamageRatioPhysics = "Physical DMG Bonus",
+            .AddedDamageRatioWind = "Wind DMG Bonus",
+        });
     };
 
     fn init(data: Player.Equipment, name_map: *const NameMap) Equipment {
