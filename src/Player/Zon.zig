@@ -3,6 +3,7 @@
 const Zon = @This();
 
 const std = @import("std");
+const Io = std.Io;
 const Allocator = std.mem.Allocator;
 
 const eldreda = @import("../eldreda.zig");
@@ -36,17 +37,31 @@ pub const Weapon = struct {
     fn init(data: Player.Weapon) Weapon {
         return .{ .id = @backingInt(data.bits.id) };
     }
+
+    fn pack(weapon: Weapon, diag: *PackDiagnostics) PackError!Player.Weapon {
+        return .{
+            .uid_maybe = .none,
+            .bits = .{
+                .id = Player.Weapon.Id.fromInt(weapon.id) orelse return diag.fail(
+                    .id_invalid,
+                    .{ .kind = "weapon", .id = weapon.id },
+                ),
+            },
+        };
+    }
 };
 
 pub const Equipment = struct {
     id: u32,
     main_property: Property,
-    sub_properties: struct {
+    sub_properties: SubProperties,
+
+    pub const SubProperties = struct {
         @"1": ?Property,
         @"2": ?Property,
         @"3": ?Property,
         @"4": ?Property,
-    },
+    };
 
     pub const Property = struct {
         key: u16,
@@ -60,6 +75,15 @@ pub const Equipment = struct {
                 .add = data.add,
             };
         }
+
+        fn pack(property: Property, diag: *PackDiagnostics) PackError!Player.Equipment.Property {
+            _ = diag;
+            return .{
+                .key = @fromBackingInt(property.key),
+                .base = property.base,
+                .add = property.add,
+            };
+        }
     };
 
     fn init(data: Player.Equipment) Equipment {
@@ -71,6 +95,37 @@ pub const Equipment = struct {
                 .@"2" = if (data.bits.sub_properties[1].unwrap()) |p| .init(p) else null,
                 .@"3" = if (data.bits.sub_properties[2].unwrap()) |p| .init(p) else null,
                 .@"4" = if (data.bits.sub_properties[3].unwrap()) |p| .init(p) else null,
+            },
+        };
+    }
+
+    fn pack(equipment: Equipment, diag: *PackDiagnostics) PackError!Player.Equipment {
+        return .{
+            .uid_maybe = .none,
+            .bits = .{
+                .id = Player.Equipment.Id.fromInt(equipment.id) orelse return diag.fail(
+                    .id_invalid,
+                    .{ .kind = "equipment", .id = equipment.id },
+                ),
+                .main_property = try equipment.main_property.pack(diag),
+                .sub_properties = sub_properties: {
+                    const sub_properties_count = Player.Equipment.Property.sub_count;
+                    var sub_properties: [sub_properties_count]Player.Equipment.Property.Optional =
+                        undefined;
+
+                    inline for (
+                        &sub_properties,
+                        @typeInfo(SubProperties).@"struct".field_names,
+                    ) |*sub_property_maybe, property_name| {
+                        if (@field(equipment.sub_properties, property_name)) |property| {
+                            sub_property_maybe.* = .wrap(try property.pack(diag));
+                        } else {
+                            sub_property_maybe.* = .none;
+                        }
+                    }
+
+                    break :sub_properties sub_properties;
+                },
             },
         };
     }
@@ -147,4 +202,151 @@ pub fn init(arena: Allocator, player: *Player) Allocator.Error!Zon {
         .weapons_undressed = weapons.items,
         .equipment_undressed = equipment.items,
     };
+}
+
+pub const PackDiagnostics = union(enum) {
+    limit_exceeded: struct {
+        name: []const u8,
+        limit: usize,
+    },
+    id_invalid: struct {
+        kind: []const u8,
+        id: u32,
+    },
+    avatar_duplicated: struct {
+        avatar_id: u32,
+    },
+    avatar_level_up_invalid: struct {
+        avatar_id: u32,
+        rank: u32,
+        level: u32,
+    },
+
+    pub fn format(diag: *const PackDiagnostics, writer: *Io.Writer) Io.Writer.Error!void {
+        switch (diag.*) {
+            .limit_exceeded => |details| return writer.print(
+                "too many {s} encountered, the limit is {d}",
+                .{ details.name, details.limit },
+            ),
+            .id_invalid => |details| return writer.print(
+                "invalid {s} id: {d}",
+                .{ details.kind, details.id },
+            ),
+            .avatar_duplicated => |details| return writer.print(
+                "duplicated avatar with id {d}",
+                .{details.avatar_id},
+            ),
+            .avatar_level_up_invalid => |details| return writer.print(
+                "avatar with id {d} has an invalid rank and level combination ({d}, {d})",
+                .{ details.avatar_id, details.rank, details.level },
+            ),
+        }
+    }
+
+    fn fail(
+        diag: *PackDiagnostics,
+        comptime cause: @EnumLiteral(),
+        details: @FieldType(PackDiagnostics, @tagName(cause)),
+    ) PackError {
+        diag.* = @unionInit(PackDiagnostics, @tagName(cause), details);
+        return error.CheckDiagnostics;
+    }
+};
+
+pub const PackError = error{CheckDiagnostics};
+
+pub fn pack(zon: *const Player.Zon, diag: *PackDiagnostics) PackError!Player {
+    var player: Player = .{
+        .avatars = .empty,
+        .weapons = .empty,
+        .equipment = .empty,
+    };
+
+    for (zon.avatars) |avatar_zon| {
+        const weapon_uid_maybe: Player.Weapon.Uid.Optional = if (avatar_zon.weapon) |weapon_zon| add: {
+            const weapon = try weapon_zon.pack(diag);
+            const weapon_uid = player.weapons.add(weapon) catch |err| switch (err) {
+                error.NoSpaceLeft => return diag.fail(.limit_exceeded, .{
+                    .name = "weapons",
+                    .limit = Player.Weapon.count_max,
+                }),
+            };
+
+            break :add .wrap(weapon_uid);
+        } else .none;
+
+        var dressed_equipment: [Player.Avatar.equipment_count]Player.Equipment.Uid.Optional =
+            undefined;
+
+        inline for (
+            &dressed_equipment,
+            @typeInfo(Avatar.EquipmentSlots).@"struct".field_names,
+        ) |*equipment_uid_maybe, slot_name| {
+            if (@field(avatar_zon.equipment, slot_name)) |equipment_zon| {
+                const equipment = try equipment_zon.pack(diag);
+                equipment_uid_maybe.* =
+                    .wrap(player.equipment.add(equipment) catch |err| switch (err) {
+                        error.NoSpaceLeft => return diag.fail(.limit_exceeded, .{
+                            .name = "equipment",
+                            .limit = Player.Equipment.count_max,
+                        }),
+                    });
+            } else {
+                equipment_uid_maybe.* = .none;
+            }
+        }
+
+        const avatar: Player.Avatar = .{
+            .id = Player.Avatar.Id.fromInt(avatar_zon.id) orelse return diag.fail(
+                .id_invalid,
+                .{ .kind = "avatar", .id = avatar_zon.id },
+            ),
+            .bits = .{
+                .level_up = Player.Avatar.LevelUp.fromRankAndLevel(
+                    avatar_zon.rank,
+                    avatar_zon.level,
+                ) orelse return diag.fail(.avatar_level_up_invalid, .{
+                    .avatar_id = avatar_zon.id,
+                    .rank = avatar_zon.rank,
+                    .level = avatar_zon.level,
+                }),
+                .flags = .{ .favorite = avatar_zon.favorite },
+            },
+            .weapon_uid_maybe = weapon_uid_maybe,
+            .dressed_equipment = dressed_equipment,
+        };
+
+        const result = player.avatars.getOrAdd(avatar) catch |err| switch (err) {
+            error.NoSpaceLeft => return diag.fail(.limit_exceeded, .{
+                .name = "avatars",
+                .limit = Player.Avatar.count_max,
+            }),
+        };
+
+        if (result.found_existing) return diag.fail(.avatar_duplicated, .{
+            .avatar_id = avatar_zon.id,
+        });
+    }
+
+    for (zon.weapons_undressed) |weapon_zon| {
+        const weapon = try weapon_zon.pack(diag);
+        _ = player.weapons.add(weapon) catch |err| switch (err) {
+            error.NoSpaceLeft => return diag.fail(.limit_exceeded, .{
+                .name = "weapons",
+                .limit = Player.Weapon.count_max,
+            }),
+        };
+    }
+
+    for (zon.equipment_undressed) |equipment_zon| {
+        const equipment = try equipment_zon.pack(diag);
+        _ = player.equipment.add(equipment) catch |err| switch (err) {
+            error.NoSpaceLeft => return diag.fail(.limit_exceeded, .{
+                .name = "equipment",
+                .limit = Player.Equipment.count_max,
+            }),
+        };
+    }
+
+    return player;
 }

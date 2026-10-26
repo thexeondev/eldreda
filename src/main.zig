@@ -147,7 +147,7 @@ pub fn main(init: process.Init.Minimal) !void {
     switch (command_tag) {
         .serve => {},
         .@"print-player" => return @import("main/print-player.zig").run(io, gpa, args_slice[args_i..]),
-        .@"pack-player" => @panic("TODO implement pack-player"),
+        .@"pack-player" => return @import("main/pack-player.zig").run(io, gpa, args_slice[args_i..]),
         .version => {
             Io.File.stdout().writeStreamingAll(io, build_options.version ++ "\n") catch {};
             process.exit(0);
