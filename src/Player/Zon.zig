@@ -20,6 +20,8 @@ pub const NameMap = struct {
     avatar_name_by_id: std.array_hash_map.Auto(Player.Avatar.Id, []const u8),
     weapon_id_by_name: std.array_hash_map.String(Player.Weapon.Id),
     weapon_name_by_id: std.array_hash_map.Auto(Player.Weapon.Id, []const u8),
+    equipment_id_by_name_rarity_s: std.array_hash_map.String(u32),
+    equipment_name_by_id_rarity_s: std.array_hash_map.Auto(u32, []const u8),
 
     pub fn init(gpa: Allocator, text_map: *const templates.Text.Map) Allocator.Error!NameMap {
         var arena_instance: std.heap.ArenaAllocator = .init(gpa);
@@ -28,7 +30,6 @@ pub const NameMap = struct {
 
         var avatar_id_by_name: std.array_hash_map.String(Player.Avatar.Id) = .empty;
         defer avatar_id_by_name.deinit(gpa);
-
         var avatar_name_by_id: std.array_hash_map.Auto(Player.Avatar.Id, []const u8) = .empty;
         defer avatar_name_by_id.deinit(gpa);
 
@@ -64,12 +65,30 @@ pub const NameMap = struct {
             try weapon_name_by_id.putNoClobber(gpa, id, weapon_name_text);
         }
 
+        var equipment_id_by_name_rarity_s: std.array_hash_map.String(u32) = .empty;
+        defer equipment_id_by_name_rarity_s.deinit(gpa);
+        var equipment_name_by_id_rarity_s: std.array_hash_map.Auto(u32, []const u8) = .empty;
+        defer equipment_name_by_id_rarity_s.deinit(gpa);
+
+        for (templates.Equipment.table.items(.id)) |id_int| {
+            const rarity: Equipment.Id.Rarity = @fromBackingInt((id_int / 10) % 10);
+            if (rarity != .s) continue;
+
+            const equipment_name_slice = try arena.print("Item_Equipment_{d}_name", .{id_int});
+            const equipment_name_text = text_map.get(equipment_name_slice) orelse equipment_name_slice;
+
+            try equipment_id_by_name_rarity_s.putNoClobber(gpa, equipment_name_text, id_int);
+            try equipment_name_by_id_rarity_s.putNoClobber(gpa, id_int, equipment_name_text);
+        }
+
         return .{
             .string_arena = arena_instance.state,
             .avatar_id_by_name = avatar_id_by_name.move(),
             .avatar_name_by_id = avatar_name_by_id.move(),
             .weapon_id_by_name = weapon_id_by_name.move(),
             .weapon_name_by_id = weapon_name_by_id.move(),
+            .equipment_name_by_id_rarity_s = equipment_name_by_id_rarity_s.move(),
+            .equipment_id_by_name_rarity_s = equipment_id_by_name_rarity_s.move(),
         };
     }
 
@@ -78,7 +97,37 @@ pub const NameMap = struct {
         name_map.avatar_name_by_id.deinit(gpa);
         name_map.weapon_id_by_name.deinit(gpa);
         name_map.weapon_name_by_id.deinit(gpa);
+        name_map.equipment_name_by_id_rarity_s.deinit(gpa);
+        name_map.equipment_id_by_name_rarity_s.deinit(gpa);
         name_map.string_arena.promote(gpa).deinit();
+    }
+
+    pub fn getEquipmentIdByNameForRarity(
+        name_map: *const NameMap,
+        name: []const u8,
+        rarity: Equipment.Id.Rarity,
+    ) ?Player.Equipment.Id {
+        const id_rarity_s = name_map.equipment_id_by_name_rarity_s.get(name) orelse return null;
+        const slot = id_rarity_s % 10;
+        const id_int = ((id_rarity_s / 100) * 100) +
+            (@backingInt(rarity) * 10) +
+            slot;
+
+        return Player.Equipment.Id.fromInt(id_int);
+    }
+
+    pub fn getEquipmentNameAndRarityById(
+        name_map: *const NameMap,
+        id: Player.Equipment.Id,
+    ) Equipment.Id {
+        const id_int = @backingInt(id);
+        const slot = id_int % 10;
+        const id_rarity_s = ((id_int / 100) * 100) +
+            (@backingInt(Equipment.Id.Rarity.s) * 10) +
+            slot;
+
+        const name = name_map.equipment_name_by_id_rarity_s.get(id_rarity_s).?;
+        return .{ .name = name, .rarity = @fromBackingInt((id_int / 10) % 10) };
     }
 };
 
@@ -125,9 +174,20 @@ pub const Weapon = struct {
 };
 
 pub const Equipment = struct {
-    id: u32,
+    id: Id,
     main_property: Property,
     sub_properties: SubProperties,
+
+    pub const Id = struct {
+        name: []const u8,
+        rarity: Rarity,
+
+        pub const Rarity = enum(u32) {
+            s = 4,
+            a = 3,
+            b = 2,
+        };
+    };
 
     pub const SubProperties = struct {
         @"1": ?Property,
@@ -159,9 +219,9 @@ pub const Equipment = struct {
         }
     };
 
-    fn init(data: Player.Equipment) Equipment {
+    fn init(data: Player.Equipment, name_map: *const NameMap) Equipment {
         return .{
-            .id = @backingInt(data.bits.id),
+            .id = name_map.getEquipmentNameAndRarityById(data.bits.id),
             .main_property = .init(data.bits.main_property),
             .sub_properties = .{
                 .@"1" = if (data.bits.sub_properties[0].unwrap()) |p| .init(p) else null,
@@ -172,13 +232,20 @@ pub const Equipment = struct {
         };
     }
 
-    fn pack(equipment: Equipment, diag: *PackDiagnostics) PackError!Player.Equipment {
+    fn pack(
+        equipment: Equipment,
+        name_map: *const NameMap,
+        diag: *PackDiagnostics,
+    ) PackError!Player.Equipment {
         return .{
             .uid_maybe = .none,
             .bits = .{
-                .id = Player.Equipment.Id.fromInt(equipment.id) orelse return diag.fail(
-                    .id_invalid,
-                    .{ .kind = "equipment", .id = equipment.id },
+                .id = name_map.getEquipmentIdByNameForRarity(
+                    equipment.id.name,
+                    equipment.id.rarity,
+                ) orelse return diag.fail(
+                    .equipment_invalid,
+                    .{ .name = equipment.id.name, .rarity = equipment.id.rarity },
                 ),
                 .main_property = try equipment.main_property.pack(diag),
                 .sub_properties = sub_properties: {
@@ -232,7 +299,7 @@ pub fn init(arena: Allocator, name_map: *const NameMap, player: *Player) Allocat
                 @field(equipment, slot_name) = .init(.{
                     .uid_maybe = .wrap(equipment_uid),
                     .bits = player.equipment.bits()[equipment_index],
-                });
+                }, name_map);
             } else {
                 @field(equipment, slot_name) = null;
             }
@@ -267,7 +334,7 @@ pub fn init(arena: Allocator, name_map: *const NameMap, player: *Player) Allocat
         equipment.appendAssumeCapacity(.init(.{
             .uid_maybe = .wrap(equipment_uid),
             .bits = bits,
-        }));
+        }, name_map));
     }
 
     return .{
@@ -282,12 +349,12 @@ pub const PackDiagnostics = union(enum) {
         name: []const u8,
         limit: usize,
     },
-    id_invalid: struct {
-        kind: []const u8,
-        id: u32,
-    },
     name_invalid: struct {
         kind: []const u8,
+        name: []const u8,
+    },
+    equipment_invalid: struct {
+        rarity: Equipment.Id.Rarity,
         name: []const u8,
     },
     avatar_duplicated: struct {
@@ -305,13 +372,13 @@ pub const PackDiagnostics = union(enum) {
                 "too many {s} encountered, the limit is {d}",
                 .{ details.name, details.limit },
             ),
-            .id_invalid => |details| return writer.print(
-                "invalid {s} id: {d}",
-                .{ details.kind, details.id },
-            ),
             .name_invalid => |details| return writer.print(
                 "invalid {s} name: {q}",
                 .{ details.kind, details.name },
+            ),
+            .equipment_invalid => |details| return writer.print(
+                "invalid equipment name {q} and rarity {t}",
+                .{ details.name, details.rarity },
             ),
             .avatar_duplicated => |details| return writer.print(
                 "duplicated avatar {q}",
@@ -368,7 +435,7 @@ pub fn pack(
             @typeInfo(Avatar.EquipmentSlots).@"struct".field_names,
         ) |*equipment_uid_maybe, slot_name| {
             if (@field(avatar_zon.equipment, slot_name)) |equipment_zon| {
-                const equipment = try equipment_zon.pack(diag);
+                const equipment = try equipment_zon.pack(name_map, diag);
                 equipment_uid_maybe.* =
                     .wrap(player.equipment.add(equipment) catch |err| switch (err) {
                         error.NoSpaceLeft => return diag.fail(.limit_exceeded, .{
@@ -424,7 +491,7 @@ pub fn pack(
     }
 
     for (zon.equipment_undressed) |equipment_zon| {
-        const equipment = try equipment_zon.pack(diag);
+        const equipment = try equipment_zon.pack(name_map, diag);
         _ = player.equipment.add(equipment) catch |err| switch (err) {
             error.NoSpaceLeft => return diag.fail(.limit_exceeded, .{
                 .name = "equipment",
