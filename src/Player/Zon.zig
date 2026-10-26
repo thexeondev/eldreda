@@ -15,10 +15,17 @@ weapons_undressed: []Weapon,
 equipment_undressed: []Equipment,
 
 pub const NameMap = struct {
+    string_arena: std.heap.ArenaAllocator.State,
     avatar_id_by_name: std.array_hash_map.String(Player.Avatar.Id),
     avatar_name_by_id: std.array_hash_map.Auto(Player.Avatar.Id, []const u8),
+    weapon_id_by_name: std.array_hash_map.String(Player.Weapon.Id),
+    weapon_name_by_id: std.array_hash_map.Auto(Player.Weapon.Id, []const u8),
 
     pub fn init(gpa: Allocator, text_map: *const templates.Text.Map) Allocator.Error!NameMap {
+        var arena_instance: std.heap.ArenaAllocator = .init(gpa);
+        errdefer arena_instance.deinit();
+        const arena = arena_instance.allocator();
+
         var avatar_id_by_name: std.array_hash_map.String(Player.Avatar.Id) = .empty;
         defer avatar_id_by_name.deinit(gpa);
 
@@ -38,15 +45,40 @@ pub const NameMap = struct {
             try avatar_name_by_id.putNoClobber(gpa, id, code_name_text);
         }
 
+        var weapon_id_by_name: std.array_hash_map.String(Player.Weapon.Id) = .empty;
+        defer weapon_id_by_name.deinit(gpa);
+        var weapon_name_by_id: std.array_hash_map.Auto(Player.Weapon.Id, []const u8) = .empty;
+        defer weapon_name_by_id.deinit(gpa);
+
+        for (
+            templates.Weapon.table.items(.id),
+            templates.Weapon.table.items(.weapon_name),
+        ) |id_int, weapon_name| {
+            const id = Player.Weapon.Id.fromInt(id_int) orelse continue;
+
+            const weapon_name_unformatted = templates.Weapon.table.getString(weapon_name);
+            const weapon_name_slice = try arena.print("Item_{s}_Name", .{weapon_name_unformatted});
+            const weapon_name_text = text_map.get(weapon_name_slice) orelse weapon_name_slice;
+
+            try weapon_id_by_name.putNoClobber(gpa, weapon_name_text, id);
+            try weapon_name_by_id.putNoClobber(gpa, id, weapon_name_text);
+        }
+
         return .{
+            .string_arena = arena_instance.state,
             .avatar_id_by_name = avatar_id_by_name.move(),
             .avatar_name_by_id = avatar_name_by_id.move(),
+            .weapon_id_by_name = weapon_id_by_name.move(),
+            .weapon_name_by_id = weapon_name_by_id.move(),
         };
     }
 
     pub fn deinit(name_map: *NameMap, gpa: Allocator) void {
         name_map.avatar_id_by_name.deinit(gpa);
         name_map.avatar_name_by_id.deinit(gpa);
+        name_map.weapon_id_by_name.deinit(gpa);
+        name_map.weapon_name_by_id.deinit(gpa);
+        name_map.string_arena.promote(gpa).deinit();
     }
 };
 
@@ -69,19 +101,23 @@ pub const Avatar = struct {
 };
 
 pub const Weapon = struct {
-    id: u32,
+    name: []const u8,
 
-    fn init(data: Player.Weapon) Weapon {
-        return .{ .id = @backingInt(data.bits.id) };
+    fn init(data: Player.Weapon, name_map: *const NameMap) Weapon {
+        return .{ .name = name_map.weapon_name_by_id.get(data.bits.id).? };
     }
 
-    fn pack(weapon: Weapon, diag: *PackDiagnostics) PackError!Player.Weapon {
+    fn pack(
+        weapon: Weapon,
+        name_map: *const NameMap,
+        diag: *PackDiagnostics,
+    ) PackError!Player.Weapon {
         return .{
             .uid_maybe = .none,
             .bits = .{
-                .id = Player.Weapon.Id.fromInt(weapon.id) orelse return diag.fail(
-                    .id_invalid,
-                    .{ .kind = "weapon", .id = weapon.id },
+                .id = name_map.weapon_id_by_name.get(weapon.name) orelse return diag.fail(
+                    .name_invalid,
+                    .{ .kind = "weapon", .name = weapon.name },
                 ),
             },
         };
@@ -183,7 +219,7 @@ pub fn init(arena: Allocator, name_map: *const NameMap, player: *Player) Allocat
             break :weapon .init(.{
                 .uid_maybe = .wrap(weapon_uid),
                 .bits = player.weapons.bits()[weapon_index],
-            });
+            }, name_map);
         } else null;
 
         var equipment: Avatar.EquipmentSlots = undefined;
@@ -220,7 +256,7 @@ pub fn init(arena: Allocator, name_map: *const NameMap, player: *Player) Allocat
         weapons.appendAssumeCapacity(.init(.{
             .uid_maybe = .wrap(weapon_uid),
             .bits = bits,
-        }));
+        }, name_map));
     }
 
     var equipment: std.ArrayList(Equipment) = try .initCapacity(arena, player.equipment.count);
@@ -313,7 +349,7 @@ pub fn pack(
 
     for (zon.avatars) |avatar_zon| {
         const weapon_uid_maybe: Player.Weapon.Uid.Optional = if (avatar_zon.weapon) |weapon_zon| add: {
-            const weapon = try weapon_zon.pack(diag);
+            const weapon = try weapon_zon.pack(name_map, diag);
             const weapon_uid = player.weapons.add(weapon) catch |err| switch (err) {
                 error.NoSpaceLeft => return diag.fail(.limit_exceeded, .{
                     .name = "weapons",
@@ -378,7 +414,7 @@ pub fn pack(
     }
 
     for (zon.weapons_undressed) |weapon_zon| {
-        const weapon = try weapon_zon.pack(diag);
+        const weapon = try weapon_zon.pack(name_map, diag);
         _ = player.weapons.add(weapon) catch |err| switch (err) {
             error.NoSpaceLeft => return diag.fail(.limit_exceeded, .{
                 .name = "weapons",
