@@ -11,6 +11,8 @@ const hasUniqueRepresentation = std.meta.hasUniqueRepresentation;
 const eldreda = @import("eldreda.zig");
 const templates = eldreda.templates;
 
+pub const Zon = @import("Player/Zon.zig");
+
 comptime {
     if (builtin.target.cpu.arch.endian() != .little)
         @compileError("non-little-endian machines are not supported");

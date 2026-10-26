@@ -76,8 +76,10 @@ fn generalUsage(io: Io) noreturn {
         \\Usage: eldreda [command] [options]
         \\
         \\Commands:
-        \\  serve    (default) Start the game server
-        \\  version  Print version number and exit
+        \\  serve         (default) Start the game server
+        \\  print-player  Print player save data as zon
+        \\  pack-player   Pack zon-formatted player save data to binary
+        \\  version       Print version number and exit
         \\
         \\General Options:
         \\  --help, -h  Print this help and exit
@@ -110,6 +112,8 @@ fn serveUsage(io: Io) noreturn {
 
 const Command = enum {
     serve,
+    @"print-player",
+    @"pack-player",
     version,
 };
 
@@ -142,6 +146,8 @@ pub fn main(init: process.Init.Minimal) !void {
 
     switch (command_tag) {
         .serve => {},
+        .@"print-player" => return @import("main/print-player.zig").run(io, gpa, args_slice[args_i..]),
+        .@"pack-player" => @panic("TODO implement pack-player"),
         .version => {
             Io.File.stdout().writeStreamingAll(io, build_options.version ++ "\n") catch {};
             process.exit(0);
