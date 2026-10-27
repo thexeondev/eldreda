@@ -138,6 +138,7 @@ pub const Avatar = struct {
     favorite: bool,
     unlocked_mindscape: u32,
     mindscape_tab_state: [Player.Avatar.Mindscape.unlocked_max]bool,
+    show_weapon_status: ShowWeaponStatus,
     weapon: ?Weapon,
     equipment: EquipmentSlots,
 
@@ -148,6 +149,12 @@ pub const Avatar = struct {
         @"4": ?Equipment,
         @"5": ?Equipment,
         @"6": ?Equipment,
+    };
+
+    pub const ShowWeaponStatus = enum {
+        locked,
+        unlocked_disabled,
+        unlocked_enabled,
     };
 };
 
@@ -465,6 +472,11 @@ pub fn init(arena: Allocator, name_map: *const NameMap, player: *Player) Allocat
             .favorite = bits.flags.favorite,
             .unlocked_mindscape = bits.mindscape.unlocked,
             .mindscape_tab_state = bits.mindscape.tab.toSwitches(),
+            .show_weapon_status = switch (bits.show_weapon_status) {
+                .locked => .locked,
+                .unlocked_disabled => .unlocked_disabled,
+                .unlocked_enabled => .unlocked_enabled,
+            },
             .weapon = weapon_maybe,
             .equipment = equipment,
         };
@@ -648,6 +660,11 @@ pub fn pack(
                         .tab_state = avatar_zon.mindscape_tab_state,
                     },
                 ),
+                .show_weapon_status = switch (avatar_zon.show_weapon_status) {
+                    .locked => .locked,
+                    .unlocked_disabled => .unlocked_disabled,
+                    .unlocked_enabled => .unlocked_enabled,
+                },
                 .flags = .{ .favorite = avatar_zon.favorite },
             },
             .weapon_uid_maybe = weapon_uid_maybe,

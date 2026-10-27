@@ -62,6 +62,11 @@ pub fn avatarInfo(out: AvatarInfoList.Ptr, avatar: Player.Avatar) void {
         .skill_type_level = &skills,
         .passive_skill_level = 6,
         .dressed_equip_list = dressed_equip.items,
+        .show_weapon_type = switch (avatar.bits.show_weapon_status) {
+            .locked => .LOCKED,
+            .unlocked_enabled => .SHOW,
+            .unlocked_disabled => .HIDE,
+        },
     };
 }
 

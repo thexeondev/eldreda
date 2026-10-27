@@ -83,10 +83,33 @@ const UnlockConfigTemplate = struct {
 const WeaponTemplate = struct {
     id: u32,
     weapon_name: String,
+    avatar_id: u32,
 
     const Fbs = struct {
         id: fbs.Int(u32),
         weapon_name: fbs.String,
+        unk_missing_field: fbs.Discard,
+        base_property: fbs.Discard,
+        rand_property: fbs.Discard,
+        star_limit: fbs.Discard,
+        exp_recycle: fbs.Discard,
+        weapon_script_config: fbs.Discard,
+        weapon_ui_model: fbs.Discard,
+        unk_1: fbs.Discard,
+        unk_missing_field_2: fbs.Discard,
+        unk_weapon_path: fbs.Discard,
+        unk_missing_field_3: fbs.Discard,
+        refine_initial: fbs.Discard,
+        refine_limit: fbs.Discard,
+        unk_missing_field_4: fbs.Discard,
+        unk_missing_field_5: fbs.Discard,
+        unk_string_with_values: fbs.Discard,
+        unk_missing_field_6: fbs.Discard,
+        unk_2: fbs.Discard,
+        weapon_desc: fbs.Discard,
+        weapon_release_tag: fbs.Discard,
+        unk_empty_string: fbs.Discard,
+        avatar_id: fbs.Int(u32),
     };
 };
 

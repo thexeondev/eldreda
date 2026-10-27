@@ -51,7 +51,8 @@ pub const Avatar = struct {
         level_up: LevelUp,
         flags: Flags,
         mindscape: Mindscape,
-        _: u15 = 0,
+        show_weapon_status: ShowWeapon.Status,
+        _: u13 = 0,
 
         comptime {
             assert(hasUniqueRepresentation(@This()));
@@ -312,6 +313,34 @@ pub const Avatar = struct {
 
             return .{ .unlocked = @intCast(unlocked), .tab = tab };
         }
+    };
+
+    pub const ShowWeapon = packed struct(u2) {
+        unlock: bool,
+        enable: bool,
+
+        pub const Status = enum(u2) {
+            locked = @backingInt(@as(
+                ShowWeapon,
+                .{ .unlock = false, .enable = false },
+            )),
+            unlocked_disabled = @backingInt(@as(
+                ShowWeapon,
+                .{ .unlock = true, .enable = false },
+            )),
+            unlocked_enabled = @backingInt(@as(
+                ShowWeapon,
+                .{ .unlock = true, .enable = true },
+            )),
+
+            pub fn fromBits(show_weapon: ShowWeapon) ?ShowWeapon.Status {
+                return std.enums.fromInt(u2, @backingInt(show_weapon));
+            }
+
+            pub fn bits(status: ShowWeapon.Status) ShowWeapon {
+                return @fromBackingInt(@backingInt(status));
+            }
+        };
     };
 };
 
@@ -607,6 +636,7 @@ pub fn initDefaults(player: *Player) void {
                 true,  true,  true,
             },
         ).?,
+        .show_weapon_status = .locked,
     };
 
     for (templates.AvatarBase.table.items(.id)) |id_int| {

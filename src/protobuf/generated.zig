@@ -33694,9 +33694,9 @@ pub fn makeNamespace(comptime protobuf: ProtobufOptions) type {
         pub const AvatarShowWeaponType = enum(i32) {
             pub const init: @This() = @fromBackingInt(0);
             pub const Decoded = @This();
-            AvatarShowWeaponType_DPNOCBOBNFM = 0,
-            AvatarShowWeaponType_KJKFOHNDJHA = 1,
-            AvatarShowWeaponType_MIKMMDAEFJL = 2,
+            LOCKED = 0,
+            SHOW = 1,
+            HIDE = 2,
         };
         pub const MGLPEMELLEP = struct {
             pub const message_name = "MGLPEMELLEP";

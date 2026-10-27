@@ -25,6 +25,7 @@ pub const Weapon = struct {
 
     id: u32,
     weapon_name: String,
+    avatar_id: u32,
 };
 
 pub const Equipment = struct {

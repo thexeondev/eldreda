@@ -63,8 +63,10 @@ pub fn WeaponDressCsReq(session: *Session) !void {
     const request = try session.command.decodeBody(protobuf.gen.WeaponDressCsReq.Decoded);
     const weapon_uid: Player.Weapon.Uid = @fromBackingInt(request.weapon_uid);
 
-    if (session.player.weapons.getIndexByUid(weapon_uid) == null)
+    const weapon_index = session.player.weapons.getIndexByUid(weapon_uid) orelse
         return session.sink.respondMinimal(.WeaponDressScRsp, .{ .retcode = 1 });
+
+    const weapon_id = session.player.weapons.bits()[weapon_index].id;
 
     const avatar_to_dress_index, var avatar_to_dress =
         session.player.avatars.get(request.avatar_id) orelse
@@ -89,6 +91,18 @@ pub fn WeaponDressCsReq(session: *Session) !void {
     }
 
     avatar_to_dress.weapon_uid_maybe = .wrap(weapon_uid);
+
+    switch (avatar_to_dress.bits.show_weapon_status) {
+        .locked => {
+            const template_index = templates.Weapon.table.getIndexByKey(@backingInt(weapon_id)).?;
+            const weapon_avatar_id = templates.Weapon.table.items(.avatar_id)[template_index];
+
+            if (@backingInt(avatar_to_dress.id) == weapon_avatar_id)
+                avatar_to_dress.bits.show_weapon_status = .unlocked_enabled;
+        },
+        .unlocked_disabled, .unlocked_enabled => {},
+    }
+
     session.player.avatars.replaceAt(avatar_to_dress_index, avatar_to_dress);
 
     protobuf.pack.avatarInfo(
