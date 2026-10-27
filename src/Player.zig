@@ -23,7 +23,7 @@ weapons: Weapon.List,
 equipment: Equipment.List,
 
 pub const Header = extern struct {
-    pub const current_version: u32 = 6;
+    pub const current_version: u32 = 7;
 
     comptime {
         assert(hasUniqueRepresentation(@This()));
@@ -321,8 +321,10 @@ pub const Weapon = struct {
 
     pub const count_max: usize = 2_000;
 
-    pub const Bits = extern struct {
+    pub const Bits = packed struct(u64) {
         id: Id,
+        refine: Refine,
+        _: u24 = 0,
 
         comptime {
             assert(hasUniqueRepresentation(@This()));
@@ -405,6 +407,19 @@ pub const Weapon = struct {
                 };
             }
         };
+    };
+
+    pub const Refine = enum(u8) {
+        min = 1,
+        max = 5,
+        _,
+
+        pub fn fromInt(refine_int: u32) ?Refine {
+            if (refine_int > @backingInt(Refine.max)) return null;
+            if (refine_int < @backingInt(Refine.min)) return null;
+
+            return @fromBackingInt(@intCast(refine_int));
+        }
     };
 };
 
@@ -614,7 +629,7 @@ pub fn initDefaults(player: *Player) void {
 
         _ = player.weapons.add(.{
             .uid_maybe = .none,
-            .bits = .{ .id = id },
+            .bits = .{ .id = id, .refine = .max },
         }) catch |err| switch (err) {
             error.NoSpaceLeft => unreachable,
         };

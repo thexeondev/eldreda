@@ -71,7 +71,7 @@ pub fn weaponInfo(out: *gen.WeaponInfo, weapon: Player.Weapon) void {
         .id = @backingInt(weapon.bits.id),
         .level = 60,
         .star = 5,
-        .refine_level = 1,
+        .refine_level = @backingInt(weapon.bits.refine),
     };
 }
 

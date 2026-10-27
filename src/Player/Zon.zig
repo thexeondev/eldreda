@@ -153,9 +153,13 @@ pub const Avatar = struct {
 
 pub const Weapon = struct {
     name: []const u8,
+    refine: u32,
 
     fn init(data: Player.Weapon, name_map: *const NameMap) Weapon {
-        return .{ .name = name_map.weapon_name_by_id.get(data.bits.id).? };
+        return .{
+            .name = name_map.weapon_name_by_id.get(data.bits.id).?,
+            .refine = @backingInt(data.bits.refine),
+        };
     }
 
     fn pack(
@@ -169,6 +173,10 @@ pub const Weapon = struct {
                 .id = name_map.weapon_id_by_name.get(weapon.name) orelse return diag.fail(
                     .name_invalid,
                     .{ .kind = "weapon", .name = weapon.name },
+                ),
+                .refine = Player.Weapon.Refine.fromInt(weapon.refine) orelse return diag.fail(
+                    .weapon_refine_invalid,
+                    .{ .name = weapon.name, .encountered = weapon.refine },
                 ),
             },
         };
@@ -517,6 +525,10 @@ pub const PackDiagnostics = union(enum) {
         unlocked: u32,
         tab_state: [Player.Avatar.Mindscape.unlocked_max]bool,
     },
+    weapon_refine_invalid: struct {
+        name: []const u8,
+        encountered: u32,
+    },
 
     pub fn format(diag: *const PackDiagnostics, writer: *Io.Writer) Io.Writer.Error!void {
         switch (diag.*) {
@@ -543,6 +555,13 @@ pub const PackDiagnostics = union(enum) {
             .avatar_mindscape_invalid => |details| return writer.print(
                 "avatar {q} has an invalid mindscape unlock and tab combination ({d}, {any})",
                 .{ details.avatar_name, details.unlocked, details.tab_state },
+            ),
+            .weapon_refine_invalid => |details| return writer.print(
+                "weapon {q} has an invalid refine value ({d}, expected {d}-{d})",
+                .{
+                    details.name,             details.encountered,
+                    Player.Weapon.Refine.min, Player.Weapon.Refine.max,
+                },
             ),
         }
     }
