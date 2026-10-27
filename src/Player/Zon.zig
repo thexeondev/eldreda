@@ -136,6 +136,8 @@ pub const Avatar = struct {
     level: u32,
     rank: u32,
     favorite: bool,
+    unlocked_mindscape: u32,
+    mindscape_tab_state: [Player.Avatar.Mindscape.unlocked_max]bool,
     weapon: ?Weapon,
     equipment: EquipmentSlots,
 
@@ -453,6 +455,8 @@ pub fn init(arena: Allocator, name_map: *const NameMap, player: *Player) Allocat
             .level = bits.level_up.getLevel(),
             .rank = bits.level_up.getRank(),
             .favorite = bits.flags.favorite,
+            .unlocked_mindscape = bits.mindscape.unlocked,
+            .mindscape_tab_state = bits.mindscape.tab.toSwitches(),
             .weapon = weapon_maybe,
             .equipment = equipment,
         };
@@ -508,6 +512,11 @@ pub const PackDiagnostics = union(enum) {
         rank: u32,
         level: u32,
     },
+    avatar_mindscape_invalid: struct {
+        avatar_name: []const u8,
+        unlocked: u32,
+        tab_state: [Player.Avatar.Mindscape.unlocked_max]bool,
+    },
 
     pub fn format(diag: *const PackDiagnostics, writer: *Io.Writer) Io.Writer.Error!void {
         switch (diag.*) {
@@ -530,6 +539,10 @@ pub const PackDiagnostics = union(enum) {
             .avatar_level_up_invalid => |details| return writer.print(
                 "avatar {q} has an invalid rank and level combination ({d}, {d})",
                 .{ details.avatar_name, details.rank, details.level },
+            ),
+            .avatar_mindscape_invalid => |details| return writer.print(
+                "avatar {q} has an invalid mindscape unlock and tab combination ({d}, {any})",
+                .{ details.avatar_name, details.unlocked, details.tab_state },
             ),
         }
     }
@@ -605,6 +618,17 @@ pub fn pack(
                     .rank = avatar_zon.rank,
                     .level = avatar_zon.level,
                 }),
+                .mindscape = Player.Avatar.Mindscape.fromUnlockedAndSwitches(
+                    avatar_zon.unlocked_mindscape,
+                    avatar_zon.mindscape_tab_state,
+                ) orelse return diag.fail(
+                    .avatar_mindscape_invalid,
+                    .{
+                        .avatar_name = avatar_zon.name,
+                        .unlocked = avatar_zon.unlocked_mindscape,
+                        .tab_state = avatar_zon.mindscape_tab_state,
+                    },
+                ),
                 .flags = .{ .favorite = avatar_zon.favorite },
             },
             .weapon_uid_maybe = weapon_uid_maybe,

@@ -23,7 +23,7 @@ weapons: Weapon.List,
 equipment: Equipment.List,
 
 pub const Header = extern struct {
-    pub const current_version: u32 = 5;
+    pub const current_version: u32 = 6;
 
     comptime {
         assert(hasUniqueRepresentation(@This()));
@@ -47,9 +47,11 @@ pub const Avatar = struct {
 
     pub const equipment_count = 6;
 
-    pub const Bits = extern struct {
+    pub const Bits = packed struct(u32) {
         level_up: LevelUp,
         flags: Flags,
+        mindscape: Mindscape,
+        _: u15 = 0,
 
         comptime {
             assert(hasUniqueRepresentation(@This()));
@@ -206,13 +208,12 @@ pub const Avatar = struct {
         }
     };
 
-    pub const LevelUp = packed struct(u8) {
+    pub const LevelUp = packed struct(u7) {
         pub const rank_min: u3 = 1;
         pub const rank_max: u3 = 6;
 
         rank: u3,
         up_times: u4,
-        _: u1 = 0,
 
         pub fn fromRankAndLevel(rank: u32, level: u32) ?LevelUp {
             if (rank < rank_min or rank > rank_max) return null;
@@ -246,9 +247,71 @@ pub const Avatar = struct {
         }
     };
 
-    pub const Flags = packed struct(u8) {
+    pub const Flags = packed struct(u1) {
         favorite: bool,
-        _: u7 = 0,
+    };
+
+    pub const Mindscape = packed struct(u9) {
+        unlocked: u3,
+        tab: Tab,
+
+        pub const unlocked_max: u3 = 6;
+
+        pub const Tab = packed struct(u6) {
+            @"1": bool,
+            @"2": bool,
+            @"3": bool,
+            @"4": bool,
+            @"5": bool,
+            @"6": bool,
+
+            pub fn fromSwitches(switches: [unlocked_max]bool) ?Tab {
+                for (switches[0..3], switches[3..6]) |a, b|
+                    if (a and b) return null;
+
+                var tab: Tab = undefined;
+                inline for (
+                    @typeInfo(Tab).@"struct".field_names,
+                    switches,
+                ) |switch_name, switch_value|
+                    @field(tab, switch_name) = switch_value;
+
+                return tab;
+            }
+
+            pub fn toSwitches(tab: Tab) [unlocked_max]bool {
+                var switches: [unlocked_max]bool = undefined;
+
+                inline for (
+                    &switches,
+                    @typeInfo(Tab).@"struct".field_names,
+                ) |*switch_value, switch_name|
+                    switch_value.* = @field(tab, switch_name);
+
+                return switches;
+            }
+
+            pub fn highestSet(tab: Tab) u3 {
+                const switch_names = @typeInfo(Tab).@"struct".field_names;
+                comptime var i: u3 = 6;
+                inline while (i > 0) : (i -= 1)
+                    if (@field(tab, switch_names[i - 1])) return i;
+
+                return 0;
+            }
+        };
+
+        pub fn fromUnlockedAndSwitches(
+            unlocked: u32,
+            tab_switches: [unlocked_max]bool,
+        ) ?Mindscape {
+            if (unlocked > unlocked_max) return null;
+
+            const tab = Tab.fromSwitches(tab_switches) orelse return null;
+            if (tab.highestSet() > unlocked) return null;
+
+            return .{ .unlocked = @intCast(unlocked), .tab = tab };
+        }
     };
 };
 
@@ -522,6 +585,13 @@ pub fn initDefaults(player: *Player) void {
     const avatar_bits_maxed_out: Avatar.Bits = .{
         .level_up = comptime Avatar.LevelUp.fromRankAndLevel(6, 60).?,
         .flags = .{ .favorite = false },
+        .mindscape = comptime Avatar.Mindscape.fromUnlockedAndSwitches(
+            Avatar.Mindscape.unlocked_max,
+            .{
+                false, false, false,
+                true,  true,  true,
+            },
+        ).?,
     };
 
     for (templates.AvatarBase.table.items(.id)) |id_int| {

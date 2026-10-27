@@ -34,6 +34,7 @@ const skills: [@typeInfo(Skill).@"enum".field_names.len]gen.AvatarSkillLevel = s
 pub const AvatarInfoList = StaticMultiArrayList(struct {
     avatar_info: gen.AvatarInfo,
     dressed_equip_buffer: [Player.Avatar.equipment_count]gen.DressedEquip,
+    mindscape_tab_state: [Player.Avatar.Mindscape.unlocked_max]bool,
 });
 
 pub fn avatarInfo(out: AvatarInfoList.Ptr, avatar: Player.Avatar) void {
@@ -48,14 +49,16 @@ pub fn avatarInfo(out: AvatarInfoList.Ptr, avatar: Player.Avatar) void {
         });
     }
 
+    out.mindscape_tab_state.* = avatar.bits.mindscape.tab.toSwitches();
+
     out.avatar_info.* = .{
         .id = @backingInt(avatar.id),
         .level = avatar.bits.level_up.getLevel(),
         .rank = avatar.bits.level_up.getRank(),
         .is_favorite = avatar.bits.flags.favorite,
         .cur_weapon_uid = @backingInt(avatar.weapon_uid_maybe),
-        .unlocked_talent_num = 6,
-        .mindscape_tab_state = &.{ false, false, false, true, true, true },
+        .unlocked_talent_num = avatar.bits.mindscape.unlocked,
+        .mindscape_tab_state = out.mindscape_tab_state,
         .skill_type_level = &skills,
         .passive_skill_level = 6,
         .dressed_equip_list = dressed_equip.items,
