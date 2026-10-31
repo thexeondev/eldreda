@@ -21,9 +21,10 @@ comptime {
 avatars: Avatar.List,
 weapons: Weapon.List,
 equipment: Equipment.List,
+main_city: MainCity,
 
 pub const Header = extern struct {
-    pub const current_version: u32 = 7;
+    pub const current_version: u32 = 8;
 
     comptime {
         assert(hasUniqueRepresentation(@This()));
@@ -619,11 +620,32 @@ pub const Equipment = struct {
     };
 };
 
+pub const MainCity = extern struct {
+    section: Section,
+
+    pub const Section = enum(u32) {
+        _,
+
+        pub fn fromInt(section_int: u32) ?Section {
+            if (templates.SectionConfig.table.getIndexByKey(section_int)) |index| {
+                const display_name = templates.SectionConfig.table.items(.display_name)[index];
+                if (display_name != .empty)
+                    return @fromBackingInt(section_int);
+            }
+
+            return null;
+        }
+    };
+};
+
 pub fn initDefaults(player: *Player) void {
     player.* = .{
         .avatars = .empty,
         .weapons = .empty,
         .equipment = .empty,
+        .main_city = .{
+            .section = MainCity.Section.fromInt(2).?,
+        },
     };
 
     const avatar_bits_maxed_out: Avatar.Bits = .{
@@ -799,7 +821,7 @@ pub fn addRandomEquipment(
 }
 
 pub fn saveToFile(player: *Player, io: Io, dir: Io.Dir, sub_path: []const u8) !void {
-    var vecs_buffer: [9][]const u8 = undefined;
+    var vecs_buffer: [10][]const u8 = undefined;
     var vecs: std.ArrayList([]const u8) = .initBuffer(&vecs_buffer);
 
     const header: Header = .{
@@ -820,6 +842,7 @@ pub fn saveToFile(player: *Player, io: Io, dir: Io.Dir, sub_path: []const u8) !v
     vecs.appendAssumeCapacity(@ptrCast(player.weapons.uids()));
     vecs.appendAssumeCapacity(@ptrCast(player.equipment.bits()));
     vecs.appendAssumeCapacity(@ptrCast(player.equipment.uids()));
+    vecs.appendAssumeCapacity(@ptrCast(&player.main_city));
 
     var af = try dir.createFileAtomic(io, sub_path, .{ .replace = true });
     defer af.deinit(io);
@@ -951,7 +974,7 @@ pub fn loadFromFile(
             .encountered = header.equipment_count,
         });
 
-    var vecs_buffer: [8][]u8 = undefined;
+    var vecs_buffer: [9][]u8 = undefined;
     var vecs: std.ArrayList([]u8) = .initBuffer(&vecs_buffer);
 
     player.avatars.count = header.avatar_count;
@@ -969,6 +992,8 @@ pub fn loadFromFile(
     player.equipment.uid_counter = header.equipment_uid_counter;
     vecs.appendAssumeCapacity(@ptrCast(player.equipment.bits()));
     vecs.appendAssumeCapacity(@ptrCast(player.equipment.uids()));
+
+    vecs.appendAssumeCapacity(@ptrCast(&player.main_city));
 
     file_reader.interface.readVecAll(vecs.items) catch |err| switch (err) {
         error.EndOfStream => return diag.fileSystem(error.EarlyEos),

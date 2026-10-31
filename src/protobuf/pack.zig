@@ -114,3 +114,16 @@ pub fn equipInfo(out: EquipInfoList.Ptr, equipment: Player.Equipment) void {
         .sub_propertys = sub_property_list.items,
     };
 }
+
+pub fn sceneDataForHall(main_city: Player.MainCity) gen.SceneData {
+    return .{
+        .scene_type = 1, // hall
+        .hall_scene_data = .{
+            .section_id = @backingInt(main_city.section),
+            .control_avatar_id = 2011, // TODO
+            .control_guise_avatar_id = 1601, // TODO
+            .day_of_week = 5, // TODO: Player.Time
+            .scene_time_in_minutes = 360, // TODO: Player.Time
+        },
+    };
+}

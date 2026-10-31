@@ -43,6 +43,7 @@ const template_tb_list: []const struct { []const u8, type } = &.{
     .{ "TeleportConfigTemplateTb", TeleportConfigTemplate },
     .{ "UrbanAreaMapTemplateTb", UrbanAreaMapTemplate },
     .{ "UrbanAreaMapGroupTemplateTb", UrbanAreaMapGroupTemplate },
+    .{ "SectionConfigTemplateTb", SectionConfigTemplate },
 };
 
 const AvatarBaseTemplate = struct {
@@ -156,6 +157,22 @@ const UrbanAreaMapGroupTemplate = struct {
 
     const Fbs = struct {
         id: fbs.Int(u32),
+    };
+};
+
+const SectionConfigTemplate = struct {
+    id: u32,
+    default_transform: String,
+    display_name: String,
+
+    const Fbs = struct {
+        id: fbs.Int(u32),
+        photo_name: fbs.String,
+        tag_name: fbs.String,
+        default_transform: fbs.String,
+        alternative_transform: fbs.String,
+        unk_1: fbs.Discard,
+        display_name: fbs.String,
     };
 };
 

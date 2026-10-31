@@ -21,6 +21,7 @@ const textmap_includes: []const struct {
     .{ .prefix = "Avatar_Male_Size", .suffix = "_En" },
     .{ .prefix = "Item_Weapon_", .suffix = "_Name" },
     .{ .prefix = "Item_Equipment_", .suffix = "_name" },
+    .{ .prefix = "SectionName_", .suffix = "" },
 };
 
 pub fn main(init: process.Init) !void {

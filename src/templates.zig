@@ -64,6 +64,15 @@ pub const UrbanAreaMapGroup = struct {
     id: u32,
 };
 
+pub const SectionConfig = struct {
+    pub const Table = TemplateTb(SectionConfig, "SectionConfigTemplateTb", .id);
+    pub const table: Table = .init();
+
+    id: u32,
+    default_transform: String,
+    display_name: String,
+};
+
 pub const Text = struct {
     pub const Table = TemplateTb(Text, "assets/textmap.bin", .key);
     pub const table: Table = .init();

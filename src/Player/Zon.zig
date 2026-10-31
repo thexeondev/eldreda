@@ -10,6 +10,7 @@ const eldreda = @import("../eldreda.zig");
 const Player = eldreda.Player;
 const templates = eldreda.templates;
 
+main_city: MainCity,
 avatars: []Avatar,
 weapons_undressed: []Weapon,
 equipment_undressed: []Equipment,
@@ -22,6 +23,8 @@ pub const NameMap = struct {
     weapon_name_by_id: std.array_hash_map.Auto(Player.Weapon.Id, []const u8),
     equipment_id_by_name_rarity_s: std.array_hash_map.String(u32),
     equipment_name_by_id_rarity_s: std.array_hash_map.Auto(u32, []const u8),
+    section_id_by_name: std.array_hash_map.String(u32),
+    section_name_by_id: std.array_hash_map.Auto(u32, []const u8),
 
     pub fn init(gpa: Allocator, text_map: *const templates.Text.Map) Allocator.Error!NameMap {
         var arena_instance: std.heap.ArenaAllocator = .init(gpa);
@@ -81,6 +84,30 @@ pub const NameMap = struct {
             try equipment_name_by_id_rarity_s.putNoClobber(gpa, id_int, equipment_name_text);
         }
 
+        var section_id_by_name: std.array_hash_map.String(u32) = .empty;
+        defer section_id_by_name.deinit(gpa);
+        var section_name_by_id: std.array_hash_map.Auto(u32, []const u8) = .empty;
+        defer section_name_by_id.deinit(gpa);
+
+        for (
+            templates.SectionConfig.table.items(.id),
+            templates.SectionConfig.table.items(.display_name),
+        ) |id, display_name| {
+            const display_name_slice = templates.SectionConfig.table.getString(display_name);
+            if (display_name_slice.len == 0) continue;
+
+            var display_name_text = text_map.get(display_name_slice) orelse display_name_slice;
+            const get_or_put = try section_id_by_name.getOrPut(gpa, display_name_text);
+            if (get_or_put.found_existing) {
+                display_name_text = try arena.print("Section_{d}", .{id});
+                try section_id_by_name.putNoClobber(gpa, display_name_text, id);
+            } else {
+                get_or_put.value_ptr.* = id;
+            }
+
+            try section_name_by_id.putNoClobber(gpa, id, display_name_text);
+        }
+
         return .{
             .string_arena = arena_instance.state,
             .avatar_id_by_name = avatar_id_by_name.move(),
@@ -89,6 +116,8 @@ pub const NameMap = struct {
             .weapon_name_by_id = weapon_name_by_id.move(),
             .equipment_name_by_id_rarity_s = equipment_name_by_id_rarity_s.move(),
             .equipment_id_by_name_rarity_s = equipment_id_by_name_rarity_s.move(),
+            .section_id_by_name = section_id_by_name.move(),
+            .section_name_by_id = section_name_by_id.move(),
         };
     }
 
@@ -100,6 +129,8 @@ pub const NameMap = struct {
         name_map.equipment_name_by_id_rarity_s.deinit(gpa);
         name_map.equipment_id_by_name_rarity_s.deinit(gpa);
         name_map.string_arena.promote(gpa).deinit();
+        name_map.section_id_by_name.deinit(gpa);
+        name_map.section_name_by_id.deinit(gpa);
     }
 
     pub fn getEquipmentIdByNameForRarity(
@@ -129,6 +160,10 @@ pub const NameMap = struct {
         const name = name_map.equipment_name_by_id_rarity_s.get(id_rarity_s).?;
         return .{ .name = name, .rarity = @fromBackingInt((id_int / 10) % 10) };
     }
+};
+
+pub const MainCity = struct {
+    section: []const u8,
 };
 
 pub const Avatar = struct {
@@ -432,6 +467,10 @@ pub const Equipment = struct {
 };
 
 pub fn init(arena: Allocator, name_map: *const NameMap, player: *Player) Allocator.Error!Zon {
+    const main_city: MainCity = .{
+        .section = name_map.section_name_by_id.get(@backingInt(player.main_city.section)).?,
+    };
+
     const avatars = try arena.alloc(Avatar, player.avatars.count);
 
     for (
@@ -505,6 +544,7 @@ pub fn init(arena: Allocator, name_map: *const NameMap, player: *Player) Allocat
     }
 
     return .{
+        .main_city = main_city,
         .avatars = avatars,
         .weapons_undressed = weapons.items,
         .equipment_undressed = equipment.items,
@@ -595,10 +635,19 @@ pub fn pack(
     name_map: *const NameMap,
     diag: *PackDiagnostics,
 ) PackError!Player {
+    const section_id_int = name_map.section_id_by_name.get(zon.main_city.section) orelse
+        return diag.fail(
+            .name_invalid,
+            .{ .kind = "section", .name = zon.main_city.section },
+        );
+
     var player: Player = .{
         .avatars = .empty,
         .weapons = .empty,
         .equipment = .empty,
+        .main_city = .{
+            .section = @fromBackingInt(section_id_int),
+        },
     };
 
     for (zon.avatars) |avatar_zon| {
