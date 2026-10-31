@@ -10,6 +10,7 @@ const eldreda = @import("../eldreda.zig");
 const Player = eldreda.Player;
 const templates = eldreda.templates;
 
+role: Role,
 main_city: MainCity,
 avatars: []Avatar,
 weapons_undressed: []Weapon,
@@ -165,6 +166,22 @@ pub const NameMap = struct {
 pub const MainCity = struct {
     section: []const u8,
 };
+
+pub const Role = struct {
+    avatar: []const u8,
+    control_avatar: []const u8,
+    control_guise_avatar: []const u8,
+};
+
+const player_role_avatar_by_name: std.StaticStringMap(Player.Role.Avatar) = .initComptime(.{
+    .{ "Wise", .wise },
+    .{ "Belle", .belle },
+});
+
+const name_by_player_role_avatar: std.EnumArray(Player.Role.Avatar, []const u8) = .init(.{
+    .wise = "Wise",
+    .belle = "Belle",
+});
 
 pub const Avatar = struct {
     name: []const u8,
@@ -467,6 +484,18 @@ pub const Equipment = struct {
 };
 
 pub fn init(arena: Allocator, name_map: *const NameMap, player: *Player) Allocator.Error!Zon {
+    const role: Role = .{
+        .avatar = name_by_player_role_avatar.get(player.role.avatar),
+        .control_avatar = name_by_player_role_avatar.get(player.role.control_avatar),
+        .control_guise_avatar = switch (player.role.control_guise_avatar) {
+            .wise, .belle => |main| name_by_player_role_avatar.get(@fromBackingInt(@backingInt(main))),
+            _ => |custom_guise| custom: {
+                const custom_avatar_id = custom_guise.toAvatarId().?;
+                break :custom name_map.avatar_name_by_id.get(custom_avatar_id).?;
+            },
+        },
+    };
+
     const main_city: MainCity = .{
         .section = name_map.section_name_by_id.get(@backingInt(player.main_city.section)).?,
     };
@@ -544,6 +573,7 @@ pub fn init(arena: Allocator, name_map: *const NameMap, player: *Player) Allocat
     }
 
     return .{
+        .role = role,
         .main_city = main_city,
         .avatars = avatars,
         .weapons_undressed = weapons.items,
@@ -647,6 +677,25 @@ pub fn pack(
         .equipment = .empty,
         .main_city = .{
             .section = @fromBackingInt(section_id_int),
+        },
+        .role = .{
+            .avatar = player_role_avatar_by_name.get(zon.role.avatar) orelse
+                return diag.fail(
+                    .name_invalid,
+                    .{ .kind = "role avatar", .name = zon.role.avatar },
+                ),
+            .control_avatar = player_role_avatar_by_name.get(zon.role.control_avatar) orelse
+                return diag.fail(
+                    .name_invalid,
+                    .{ .kind = "role control avatar", .name = zon.role.avatar },
+                ),
+            .control_guise_avatar = if (player_role_avatar_by_name.get(zon.role.control_guise_avatar)) |role|
+                @fromBackingInt(@backingInt(role))
+            else
+                @fromBackingInt(@backingInt(name_map.avatar_id_by_name.get(zon.role.control_guise_avatar) orelse return diag.fail(
+                    .name_invalid,
+                    .{ .kind = "role control guise avatar", .name = zon.role.control_guise_avatar },
+                ))),
         },
     };
 

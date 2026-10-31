@@ -5,7 +5,10 @@ const protobuf = eldreda.protobuf;
 
 pub fn EnterWorldCsReq(session: *Session) !void {
     try session.sink.notify(protobuf.gen.EnterSceneScNotify, &.{
-        .scene = protobuf.pack.sceneDataForHall(session.player.main_city),
+        .scene = protobuf.pack.sceneDataForHall(.{
+            .main_city = &session.player.main_city,
+            .role = &session.player.role,
+        }),
     });
 
     return session.sink.respond(protobuf.gen.EnterWorldScRsp, &.{});
@@ -17,7 +20,10 @@ pub fn EnterSectionCompleteCsReq(session: *Session) !void {
 
 pub fn LeaveCurSceneCsReq(session: *Session) !void {
     try session.sink.notify(protobuf.gen.EnterSceneScNotify, &.{
-        .scene = protobuf.pack.sceneDataForHall(session.player.main_city),
+        .scene = protobuf.pack.sceneDataForHall(.{
+            .main_city = &session.player.main_city,
+            .role = &session.player.role,
+        }),
     });
 
     return session.sink.respondMinimal(.LeaveCurSceneScRsp, .{ .retcode = .RET_SUCC });
@@ -32,7 +38,10 @@ pub fn EnterSectionCsReq(session: *Session) !void {
     session.player.main_city.section = section;
 
     try session.sink.notify(protobuf.gen.EnterSceneScNotify, &.{
-        .scene = protobuf.pack.sceneDataForHall(session.player.main_city),
+        .scene = protobuf.pack.sceneDataForHall(.{
+            .main_city = &session.player.main_city,
+            .role = &session.player.role,
+        }),
     });
 
     return session.sink.respondMinimal(.EnterSectionScRsp, .{ .retcode = .RET_SUCC });

@@ -22,9 +22,10 @@ avatars: Avatar.List,
 weapons: Weapon.List,
 equipment: Equipment.List,
 main_city: MainCity,
+role: Role,
 
 pub const Header = extern struct {
-    pub const current_version: u32 = 8;
+    pub const current_version: u32 = 9;
 
     comptime {
         assert(hasUniqueRepresentation(@This()));
@@ -623,6 +624,10 @@ pub const Equipment = struct {
 pub const MainCity = extern struct {
     section: Section,
 
+    comptime {
+        assert(hasUniqueRepresentation(@This()));
+    }
+
     pub const Section = enum(u32) {
         _,
 
@@ -638,6 +643,50 @@ pub const MainCity = extern struct {
     };
 };
 
+pub const Role = extern struct {
+    avatar: Player.Role.Avatar,
+    control_avatar: Player.Role.Avatar,
+    control_guise_avatar: Player.Role.Guise,
+
+    comptime {
+        assert(hasUniqueRepresentation(@This()));
+    }
+
+    pub const Avatar = enum(u32) {
+        wise = 2011,
+        belle = 2021,
+
+        pub fn fromInt(id_int: u32) ?Player.Role.Avatar {
+            return std.enums.fromInt(Player.Role.Avatar, id_int);
+        }
+    };
+
+    pub const Guise = enum(u32) {
+        wise = 2011,
+        belle = 2021,
+        _,
+
+        pub fn fromInt(id_int: u32) ?Guise {
+            return switch (@as(Guise, @fromBackingInt(id_int))) {
+                .wise, .belle => |main| main,
+                _ => |custom| {
+                    if (Player.Avatar.Id.fromInt(id_int) == null)
+                        return null;
+
+                    return custom;
+                },
+            };
+        }
+
+        pub fn toAvatarId(guise: Guise) ?Player.Avatar.Id {
+            return switch (guise) {
+                .wise, .belle => null,
+                _ => |avatar| Player.Avatar.Id.fromInt(@backingInt(avatar)).?,
+            };
+        }
+    };
+};
+
 pub fn initDefaults(player: *Player) void {
     player.* = .{
         .avatars = .empty,
@@ -645,6 +694,11 @@ pub fn initDefaults(player: *Player) void {
         .equipment = .empty,
         .main_city = .{
             .section = MainCity.Section.fromInt(2).?,
+        },
+        .role = .{
+            .avatar = .wise,
+            .control_avatar = .wise,
+            .control_guise_avatar = Role.Guise.fromInt(1601).?,
         },
     };
 
@@ -821,7 +875,7 @@ pub fn addRandomEquipment(
 }
 
 pub fn saveToFile(player: *Player, io: Io, dir: Io.Dir, sub_path: []const u8) !void {
-    var vecs_buffer: [10][]const u8 = undefined;
+    var vecs_buffer: [11][]const u8 = undefined;
     var vecs: std.ArrayList([]const u8) = .initBuffer(&vecs_buffer);
 
     const header: Header = .{
@@ -843,6 +897,7 @@ pub fn saveToFile(player: *Player, io: Io, dir: Io.Dir, sub_path: []const u8) !v
     vecs.appendAssumeCapacity(@ptrCast(player.equipment.bits()));
     vecs.appendAssumeCapacity(@ptrCast(player.equipment.uids()));
     vecs.appendAssumeCapacity(@ptrCast(&player.main_city));
+    vecs.appendAssumeCapacity(@ptrCast(&player.role));
 
     var af = try dir.createFileAtomic(io, sub_path, .{ .replace = true });
     defer af.deinit(io);
@@ -974,7 +1029,7 @@ pub fn loadFromFile(
             .encountered = header.equipment_count,
         });
 
-    var vecs_buffer: [9][]u8 = undefined;
+    var vecs_buffer: [10][]u8 = undefined;
     var vecs: std.ArrayList([]u8) = .initBuffer(&vecs_buffer);
 
     player.avatars.count = header.avatar_count;
@@ -994,6 +1049,8 @@ pub fn loadFromFile(
     vecs.appendAssumeCapacity(@ptrCast(player.equipment.uids()));
 
     vecs.appendAssumeCapacity(@ptrCast(&player.main_city));
+
+    vecs.appendAssumeCapacity(@ptrCast(&player.role));
 
     file_reader.interface.readVecAll(vecs.items) catch |err| switch (err) {
         error.EndOfStream => return diag.fileSystem(error.EarlyEos),

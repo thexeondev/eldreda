@@ -115,15 +115,29 @@ pub fn equipInfo(out: EquipInfoList.Ptr, equipment: Player.Equipment) void {
     };
 }
 
-pub fn sceneDataForHall(main_city: Player.MainCity) gen.SceneData {
+pub fn sceneDataForHall(options: struct {
+    main_city: *const Player.MainCity,
+    role: *const Player.Role,
+}) gen.SceneData {
     return .{
         .scene_type = 1, // hall
         .hall_scene_data = .{
-            .section_id = @backingInt(main_city.section),
-            .control_avatar_id = 2011, // TODO
-            .control_guise_avatar_id = 1601, // TODO
+            .section_id = @backingInt(options.main_city.section),
+            .control_avatar_id = @backingInt(options.role.control_avatar),
+            .control_guise_avatar_id = @backingInt(options.role.control_guise_avatar),
             .day_of_week = 5, // TODO: Player.Time
             .scene_time_in_minutes = 360, // TODO: Player.Time
         },
+    };
+}
+
+pub fn selfBasicInfo(role: *const Player.Role) gen.SelfBasicInfo {
+    return .{
+        .nick_name = "xeondev",
+        .level = 1,
+        .name_change_times = 1,
+        .avatar_id = @backingInt(role.avatar),
+        .control_avatar_id = @backingInt(role.control_avatar),
+        .control_guise_avatar_id = @backingInt(role.control_guise_avatar),
     };
 }
