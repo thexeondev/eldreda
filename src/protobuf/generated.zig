@@ -36,6 +36,28 @@ pub fn makeNamespace(comptime protobuf: ProtobufOptions) type {
                 pub const @"ack_packet_id": Encoding = .normal;
             };
         };
+        pub const DummyScRsp = struct {
+            pub const message_name = "DummyScRsp";
+            pub const cmd_id: u16 = 1292;
+            @"retcode": i32 = 0,
+            pub const xor_by_field = struct {
+                pub const @"retcode": u31 = 2727;
+            };
+            pub const oneof_by_field = struct {
+            };
+            pub const FieldNumber = enum(u29) {
+                @"retcode" = 13,
+                _,
+            };
+            pub const Decoded = struct {
+                pub const Parent = DummyScRsp;
+                pub const init: @This() = .{};
+                @"retcode": i32 = 0,
+            };
+            pub const encoding_by_field = struct {
+                pub const @"retcode": Encoding = .normal;
+            };
+        };
         pub const GLPDBMNOMFJ = struct {
             pub const message_name = "GLPDBMNOMFJ";
             @"UNK_GLPDBMNOMFJ_48": []const ALOPNDKFKOM = &.{},
@@ -153901,28 +153923,6 @@ pub fn makeNamespace(comptime protobuf: ProtobufOptions) type {
                 pub const @"OGCDOILICDF": Encoding = .normal;
                 pub const @"FKJHIIBHLAG": Encoding = .normal;
                 pub const @"DCMAKJGOMPI": Encoding = .normal;
-            };
-        };
-        pub const DummyScRsp = struct {
-            pub const message_name = "DummyScRsp";
-            pub const cmd_id: u16 = 1292;
-            @"retcode": i32 = 0,
-            pub const xor_by_field = struct {
-                pub const @"retcode": u31 = 2727;
-            };
-            pub const oneof_by_field = struct {
-            };
-            pub const FieldNumber = enum(u29) {
-                @"retcode" = 13,
-                _,
-            };
-            pub const Decoded = struct {
-                pub const Parent = DummyScRsp;
-                pub const init: @This() = .{};
-                @"retcode": i32 = 0,
-            };
-            pub const encoding_by_field = struct {
-                pub const @"retcode": Encoding = .normal;
             };
         };
     };

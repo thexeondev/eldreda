@@ -32,3 +32,16 @@ pub fn LeaveCurSceneCsReq(session: *Session) !void {
 
     return session.sink.respondMinimal(.LeaveCurSceneScRsp, .{ .retcode = 0 });
 }
+
+pub fn EnterSectionCsReq(session: *Session) !void {
+    const request = try session.command.decodeBody(protobuf.gen.EnterSectionCsReq.Decoded);
+
+    var scene = default_hall_scene;
+    scene.hall_scene_data.?.section_id = request.section_id;
+
+    try session.sink.notify(protobuf.gen.EnterSceneScNotify, &.{
+        .scene = scene,
+    });
+
+    return session.sink.respondMinimal(.EnterSectionScRsp, .{ .retcode = 0 });
+}

@@ -13,6 +13,7 @@ const namespaces: []const type = &.{
     @import("commands/quest.zig"),
     @import("commands/misc.zig"),
     @import("commands/world.zig"),
+    @import("commands/map.zig"),
 };
 
 const HandlerFn = *const fn (*Session) Session.Error!void;

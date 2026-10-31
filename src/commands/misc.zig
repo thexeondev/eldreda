@@ -14,6 +14,9 @@ pub fn GetMiscDataCsReq(session: *Session) !void {
             .unlock = .{
                 .unlocked_list = templates.UnlockConfig.table.items(.id),
             },
+            .teleport = .{
+                .unlocked_list = templates.TeleportConfig.table.items(.id),
+            },
             .post_girl = .{
                 .show_post_girl_id_list = &.{3510060},
                 .post_girl_item_list = &.{.{ .id = 3510060 }},

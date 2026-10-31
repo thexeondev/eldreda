@@ -42,6 +42,28 @@ pub const EquipmentSuit = struct {
     id: u32,
 };
 
+pub const TeleportConfig = struct {
+    pub const Table = TemplateTb(TeleportConfig, "TeleportConfigTemplateTb", .id);
+    pub const table: Table = .init();
+
+    id: i32,
+    client_visible: u32,
+};
+
+pub const UrbanAreaMap = struct {
+    pub const Table = TemplateTb(UrbanAreaMap, "UrbanAreaMapTemplateTb", .id);
+    pub const table: Table = .init();
+
+    id: u32,
+};
+
+pub const UrbanAreaMapGroup = struct {
+    pub const Table = TemplateTb(UrbanAreaMapGroup, "UrbanAreaMapGroupTemplateTb", .id);
+    pub const table: Table = .init();
+
+    id: u32,
+};
+
 pub const Text = struct {
     pub const Table = TemplateTb(Text, "assets/textmap.bin", .key);
     pub const table: Table = .init();

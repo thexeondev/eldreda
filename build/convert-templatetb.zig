@@ -40,6 +40,9 @@ const template_tb_list: []const struct { []const u8, type } = &.{
     .{ "WeaponTemplateTb", WeaponTemplate },
     .{ "EquipmentTemplateTb", EquipmentTemplate },
     .{ "EquipmentSuitTemplateTb", EquipmentSuitTemplate },
+    .{ "TeleportConfigTemplateTb", TeleportConfigTemplate },
+    .{ "UrbanAreaMapTemplateTb", UrbanAreaMapTemplate },
+    .{ "UrbanAreaMapGroupTemplateTb", UrbanAreaMapGroupTemplate },
 };
 
 const AvatarBaseTemplate = struct {
@@ -122,6 +125,33 @@ const EquipmentTemplate = struct {
 };
 
 const EquipmentSuitTemplate = struct {
+    id: u32,
+
+    const Fbs = struct {
+        id: fbs.Int(u32),
+    };
+};
+
+const TeleportConfigTemplate = struct {
+    id: i32,
+    client_visible: u32,
+
+    const Fbs = struct {
+        id: fbs.Int(i32),
+        unk_1: fbs.Discard,
+        client_visible: fbs.Int(u32),
+    };
+};
+
+const UrbanAreaMapTemplate = struct {
+    id: u32,
+
+    const Fbs = struct {
+        id: fbs.Int(u32),
+    };
+};
+
+const UrbanAreaMapGroupTemplate = struct {
     id: u32,
 
     const Fbs = struct {
