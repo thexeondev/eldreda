@@ -12,6 +12,7 @@ const templates = eldreda.templates;
 
 role: Role,
 main_city: MainCity,
+time: Time,
 avatars: []Avatar,
 weapons_undressed: []Weapon,
 equipment_undressed: []Equipment,
@@ -182,6 +183,11 @@ const name_by_player_role_avatar: std.EnumArray(Player.Role.Avatar, []const u8) 
     .wise = "Wise",
     .belle = "Belle",
 });
+
+pub const Time = struct {
+    day: Player.Time.Day,
+    period: Player.Time.Period,
+};
 
 pub const Avatar = struct {
     name: []const u8,
@@ -500,6 +506,11 @@ pub fn init(arena: Allocator, name_map: *const NameMap, player: *Player) Allocat
         .section = name_map.section_name_by_id.get(@backingInt(player.main_city.section)).?,
     };
 
+    const time: Time = .{
+        .day = player.time.day,
+        .period = player.time.period,
+    };
+
     const avatars = try arena.alloc(Avatar, player.avatars.count);
 
     for (
@@ -575,6 +586,7 @@ pub fn init(arena: Allocator, name_map: *const NameMap, player: *Player) Allocat
     return .{
         .role = role,
         .main_city = main_city,
+        .time = time,
         .avatars = avatars,
         .weapons_undressed = weapons.items,
         .equipment_undressed = equipment.items,
@@ -696,6 +708,10 @@ pub fn pack(
                     .name_invalid,
                     .{ .kind = "role control guise avatar", .name = zon.role.control_guise_avatar },
                 ))),
+        },
+        .time = .{
+            .day = zon.time.day,
+            .period = zon.time.period,
         },
     };
 

@@ -23,9 +23,10 @@ weapons: Weapon.List,
 equipment: Equipment.List,
 main_city: MainCity,
 role: Role,
+time: Time,
 
 pub const Header = extern struct {
-    pub const current_version: u32 = 9;
+    pub const current_version: u32 = 10;
 
     comptime {
         assert(hasUniqueRepresentation(@This()));
@@ -687,6 +688,84 @@ pub const Role = extern struct {
     };
 };
 
+pub const Time = packed struct(u8) {
+    day: Day,
+    period: Period,
+    _: u3 = 0,
+
+    pub const Day = enum(u3) {
+        sunday = 0,
+        monday = 1,
+        tuesday = 2,
+        wednesday = 3,
+        thursday = 4,
+        friday = 5,
+        saturday = 6,
+
+        pub fn fromInt(day_unwrapped: u32) Day {
+            return @fromBackingInt(@intCast(day_unwrapped % 7));
+        }
+
+        pub fn increment(day: Day) Day {
+            return .fromInt(@backingInt(day) + 1);
+        }
+    };
+
+    pub const Period = enum(u2) {
+        morning = 0,
+        afternoon = 1,
+        evening = 2,
+        night = 3,
+
+        const variants_count: usize = 4;
+        const minutes_per_hour: u16 = 60;
+
+        pub const Change = struct {
+            new_value: Period,
+            day_advanced: bool,
+        };
+
+        pub fn increment(period: Period) Change {
+            return switch (period) {
+                .morning => .{ .new_value = .afternoon, .day_advanced = false },
+                .afternoon => .{ .new_value = .evening, .day_advanced = false },
+                .evening => .{ .new_value = .night, .day_advanced = false },
+                .night => .{ .new_value = .morning, .day_advanced = true },
+            };
+        }
+
+        pub fn fastForwardTo(from: Period, to: Period) Change {
+            var day_advanced: bool = false;
+            var new_value: Period = from;
+            defer assert(new_value == to);
+
+            var increments: u8 = 0;
+            while (new_value != to) : (increments += 1) {
+                assert(increments < variants_count);
+
+                const incremented = new_value.increment();
+                new_value = incremented.new_value;
+
+                if (day_advanced) assert(!incremented.day_advanced); // day advanced 2 times?
+                day_advanced = day_advanced or incremented.day_advanced;
+            }
+
+            return .{ .new_value = new_value, .day_advanced = day_advanced };
+        }
+
+        pub fn toMinutes(period: Period) u16 {
+            const hour: u16 = switch (period) {
+                .morning => 6,
+                .afternoon => 12,
+                .evening => 18,
+                .night => 23,
+            };
+
+            return hour * minutes_per_hour;
+        }
+    };
+};
+
 pub fn initDefaults(player: *Player) void {
     player.* = .{
         .avatars = .empty,
@@ -699,6 +778,10 @@ pub fn initDefaults(player: *Player) void {
             .avatar = .wise,
             .control_avatar = .wise,
             .control_guise_avatar = Role.Guise.fromInt(1601).?,
+        },
+        .time = .{
+            .day = .friday,
+            .period = .morning,
         },
     };
 
@@ -875,7 +958,7 @@ pub fn addRandomEquipment(
 }
 
 pub fn saveToFile(player: *Player, io: Io, dir: Io.Dir, sub_path: []const u8) !void {
-    var vecs_buffer: [11][]const u8 = undefined;
+    var vecs_buffer: [12][]const u8 = undefined;
     var vecs: std.ArrayList([]const u8) = .initBuffer(&vecs_buffer);
 
     const header: Header = .{
@@ -898,6 +981,7 @@ pub fn saveToFile(player: *Player, io: Io, dir: Io.Dir, sub_path: []const u8) !v
     vecs.appendAssumeCapacity(@ptrCast(player.equipment.uids()));
     vecs.appendAssumeCapacity(@ptrCast(&player.main_city));
     vecs.appendAssumeCapacity(@ptrCast(&player.role));
+    vecs.appendAssumeCapacity(@ptrCast(&player.time));
 
     var af = try dir.createFileAtomic(io, sub_path, .{ .replace = true });
     defer af.deinit(io);
@@ -1029,7 +1113,7 @@ pub fn loadFromFile(
             .encountered = header.equipment_count,
         });
 
-    var vecs_buffer: [10][]u8 = undefined;
+    var vecs_buffer: [11][]u8 = undefined;
     var vecs: std.ArrayList([]u8) = .initBuffer(&vecs_buffer);
 
     player.avatars.count = header.avatar_count;
@@ -1051,6 +1135,8 @@ pub fn loadFromFile(
     vecs.appendAssumeCapacity(@ptrCast(&player.main_city));
 
     vecs.appendAssumeCapacity(@ptrCast(&player.role));
+
+    vecs.appendAssumeCapacity(@ptrCast(&player.time));
 
     file_reader.interface.readVecAll(vecs.items) catch |err| switch (err) {
         error.EndOfStream => return diag.fileSystem(error.EarlyEos),

@@ -115,19 +115,26 @@ pub fn equipInfo(out: EquipInfoList.Ptr, equipment: Player.Equipment) void {
     };
 }
 
-pub fn sceneDataForHall(options: struct {
+pub const HallOptions = struct {
     main_city: *const Player.MainCity,
     role: *const Player.Role,
-}) gen.SceneData {
+    time: *const Player.Time,
+};
+
+pub fn sceneDataForHall(options: HallOptions) gen.SceneData {
     return .{
         .scene_type = 1, // hall
-        .hall_scene_data = .{
-            .section_id = @backingInt(options.main_city.section),
-            .control_avatar_id = @backingInt(options.role.control_avatar),
-            .control_guise_avatar_id = @backingInt(options.role.control_guise_avatar),
-            .day_of_week = 5, // TODO: Player.Time
-            .scene_time_in_minutes = 360, // TODO: Player.Time
-        },
+        .hall_scene_data = hall(gen.HallSceneData, options),
+    };
+}
+
+pub fn hall(comptime Root: type, options: HallOptions) Root {
+    return .{
+        .section_id = @backingInt(options.main_city.section),
+        .control_avatar_id = @backingInt(options.role.control_avatar),
+        .control_guise_avatar_id = @backingInt(options.role.control_guise_avatar),
+        .day_of_week = @backingInt(options.time.day),
+        .scene_time_in_minutes = options.time.period.toMinutes(),
     };
 }
 
