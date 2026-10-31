@@ -55,8 +55,7 @@ pub const Sink = struct {
     }
 
     pub const RespondMinimalOptions = struct {
-        // TODO: enum
-        retcode: i32,
+        retcode: protobuf.Retcode,
     };
 
     pub fn respondMinimal(
@@ -69,6 +68,6 @@ pub const Sink = struct {
         else
             protobuf.gen.DummyScRsp;
 
-        return respond(sink, Message, &.{ .retcode = options.retcode });
+        return respond(sink, Message, &.{ .retcode = @backingInt(options.retcode) });
     }
 };

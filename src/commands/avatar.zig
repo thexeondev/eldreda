@@ -36,7 +36,10 @@ pub fn GetAvatarDataCsReq(session: *Session) !void {
 pub fn AvatarFavoriteCsReq(session: *Session) !void {
     const request = try session.command.decodeBody(protobuf.gen.AvatarFavoriteCsReq.Decoded);
     const index, var avatar = session.player.avatars.get(request.avatar_id) orelse
-        return session.sink.respondMinimal(.AvatarFavoriteScRsp, .{ .retcode = 1 });
+        return session.sink.respondMinimal(
+            .AvatarFavoriteScRsp,
+            .{ .retcode = .RET_AVATAR_PARAM_ERROR },
+        );
 
     if (avatar.bits.flags.favorite != request.is_favorite) {
         avatar.bits.flags.favorite = true;
@@ -56,7 +59,7 @@ pub fn AvatarFavoriteCsReq(session: *Session) !void {
         });
     }
 
-    return session.sink.respondMinimal(.AvatarFavoriteScRsp, .{ .retcode = 0 });
+    return session.sink.respondMinimal(.AvatarFavoriteScRsp, .{ .retcode = .RET_SUCC });
 }
 
 pub fn WeaponDressCsReq(session: *Session) !void {
@@ -64,13 +67,13 @@ pub fn WeaponDressCsReq(session: *Session) !void {
     const weapon_uid: Player.Weapon.Uid = @fromBackingInt(request.weapon_uid);
 
     const weapon_index = session.player.weapons.getIndexByUid(weapon_uid) orelse
-        return session.sink.respondMinimal(.WeaponDressScRsp, .{ .retcode = 1 });
+        return session.sink.respondMinimal(.WeaponDressScRsp, .{ .retcode = .RET_ITEM_NOT_FOUND });
 
     const weapon_id = session.player.weapons.bits()[weapon_index].id;
 
     const avatar_to_dress_index, var avatar_to_dress =
         session.player.avatars.get(request.avatar_id) orelse
-        return session.sink.respondMinimal(.WeaponDressScRsp, .{ .retcode = 1 });
+        return session.sink.respondMinimal(.WeaponDressScRsp, .{ .retcode = .RET_AVATAR_PARAM_ERROR });
 
     session.playerModified();
 
@@ -114,7 +117,7 @@ pub fn WeaponDressCsReq(session: *Session) !void {
         .avatar = .{ .avatar_list = avatar_sync.items(.avatar_info) },
     });
 
-    return session.sink.respondMinimal(.WeaponDressScRsp, .{ .retcode = 0 });
+    return session.sink.respondMinimal(.WeaponDressScRsp, .{ .retcode = .RET_SUCC });
 }
 
 pub fn WeaponUnDressCsReq(session: *Session) !void {
@@ -122,7 +125,7 @@ pub fn WeaponUnDressCsReq(session: *Session) !void {
 
     const avatar_to_undress_index, var avatar_to_undress =
         session.player.avatars.get(request.avatar_id) orelse
-        return session.sink.respondMinimal(.WeaponUnDressScRsp, .{ .retcode = 1 });
+        return session.sink.respondMinimal(.WeaponUnDressScRsp, .{ .retcode = .RET_AVATAR_NO_WEAPON });
 
     session.playerModified();
 
@@ -140,7 +143,7 @@ pub fn WeaponUnDressCsReq(session: *Session) !void {
         .avatar = .{ .avatar_list = avatar_list.items(.avatar_info) },
     });
 
-    return session.sink.respondMinimal(.WeaponUnDressScRsp, .{ .retcode = 0 });
+    return session.sink.respondMinimal(.WeaponUnDressScRsp, .{ .retcode = .RET_SUCC });
 }
 
 pub fn EquipmentDressCsReq(session: *Session) !void {
@@ -148,16 +151,19 @@ pub fn EquipmentDressCsReq(session: *Session) !void {
     const equipment_uid: Player.Equipment.Uid = @fromBackingInt(request.equip_uid);
 
     if (request.dress_index < 1 or request.dress_index > Player.Avatar.equipment_count)
-        return session.sink.respondMinimal(.EquipmentDressScRsp, .{ .retcode = 1 });
+        return session.sink.respondMinimal(
+            .EquipmentDressScRsp,
+            .{ .retcode = .RET_AVATAR_INVALID_DRESS_INDEX },
+        );
 
     const dress_index = request.dress_index - 1;
 
     if (session.player.equipment.getIndexByUid(equipment_uid) == null)
-        return session.sink.respondMinimal(.EquipmentDressScRsp, .{ .retcode = 1 });
+        return session.sink.respondMinimal(.EquipmentDressScRsp, .{ .retcode = .RET_ITEM_NOT_FOUND });
 
     const avatar_to_dress_index, var avatar_to_dress =
         session.player.avatars.get(request.avatar_id) orelse
-        return session.sink.respondMinimal(.EquipmentDressScRsp, .{ .retcode = 1 });
+        return session.sink.respondMinimal(.EquipmentDressScRsp, .{ .retcode = .RET_AVATAR_PARAM_ERROR });
 
     const avatar_buffer_size = protobuf.pack.AvatarInfoList.bufferSizeFor(2);
     var avatar_buffer: [avatar_buffer_size]u8 align(protobuf.pack.AvatarInfoList.alignment) =
@@ -166,7 +172,10 @@ pub fn EquipmentDressCsReq(session: *Session) !void {
 
     if (session.player.avatars.getByEquipmentUid(equipment_uid)) |previous_owner| {
         if (previous_owner.avatar_index == avatar_to_dress_index)
-            return session.sink.respondMinimal(.EquipmentDressScRsp, .{ .retcode = 1 });
+            return session.sink.respondMinimal(
+                .EquipmentDressScRsp,
+                .{ .retcode = .RET_AVATAR_PARAM_ERROR },
+            );
 
         var avatar_to_undress = previous_owner.avatar;
         avatar_to_undress.dressed_equipment[previous_owner.equipment_slot_index] = .none;
@@ -185,7 +194,7 @@ pub fn EquipmentDressCsReq(session: *Session) !void {
         .avatar = .{ .avatar_list = avatar_sync.items(.avatar_info) },
     });
 
-    return session.sink.respondMinimal(.EquipmentDressScRsp, .{ .retcode = 0 });
+    return session.sink.respondMinimal(.EquipmentDressScRsp, .{ .retcode = .RET_SUCC });
 }
 
 pub fn EquipmentUnDressCsReq(session: *Session) !void {
@@ -193,19 +202,35 @@ pub fn EquipmentUnDressCsReq(session: *Session) !void {
 
     const avatar_to_undress_index, var avatar_to_undress =
         session.player.avatars.get(request.avatar_id) orelse
-        return session.sink.respondMinimal(.EquipmentUnDressScRsp, .{ .retcode = 1 });
+        return session.sink.respondMinimal(
+            .EquipmentUnDressScRsp,
+            .{ .retcode = .RET_AVATAR_PARAM_ERROR },
+        );
 
     var undressed_count: usize = 0;
     while (try request.undress_index_list.next()) |undress_index_plus_one| {
         defer undressed_count += 1;
 
         if (undressed_count == Player.Avatar.equipment_count)
-            return session.sink.respondMinimal(.EquipmentUnDressScRsp, .{ .retcode = 1 });
+            return session.sink.respondMinimal(
+                .EquipmentUnDressScRsp,
+                .{ .retcode = .RET_AVATAR_INVALID_DRESS_INDEX },
+            );
 
         if (undress_index_plus_one < 1 or undress_index_plus_one > Player.Avatar.equipment_count)
-            return session.sink.respondMinimal(.EquipmentUnDressScRsp, .{ .retcode = 1 });
+            return session.sink.respondMinimal(
+                .EquipmentUnDressScRsp,
+                .{ .retcode = .RET_AVATAR_INVALID_DRESS_INDEX },
+            );
 
         const undress_index = undress_index_plus_one - 1;
+
+        if (avatar_to_undress.dressed_equipment[undress_index] == .none)
+            return session.sink.respondMinimal(
+                .EquipmentUnDressScRsp,
+                .{ .retcode = .RET_AVATAR_DRESS_INDEX_NOT_EQUIPPED },
+            );
+
         avatar_to_undress.dressed_equipment[undress_index] = .none;
     }
 
@@ -225,7 +250,7 @@ pub fn EquipmentUnDressCsReq(session: *Session) !void {
         });
     }
 
-    return session.sink.respondMinimal(.EquipmentUnDressScRsp, .{ .retcode = 0 });
+    return session.sink.respondMinimal(.EquipmentUnDressScRsp, .{ .retcode = .RET_SUCC });
 }
 
 pub fn EquipmentSuitDressCsReq(session: *Session) !void {
@@ -233,25 +258,40 @@ pub fn EquipmentSuitDressCsReq(session: *Session) !void {
 
     const avatar_to_dress_index, var avatar_to_dress =
         session.player.avatars.get(request.avatar_id) orelse
-        return session.sink.respondMinimal(.EquipmentSuitDressScRsp, .{ .retcode = 1 });
+        return session.sink.respondMinimal(
+            .EquipmentSuitDressScRsp,
+            .{ .retcode = .RET_AVATAR_PARAM_ERROR },
+        );
 
     var dressed_count: usize = 0;
     while (try request.param_list.next()) |dress_param| {
         defer dressed_count += 1;
 
         if (dressed_count == Player.Avatar.equipment_count)
-            return session.sink.respondMinimal(.EquipmentSuitDressScRsp, .{ .retcode = 1 });
+            return session.sink.respondMinimal(
+                .EquipmentSuitDressScRsp,
+                .{ .retcode = .RET_AVATAR_INVALID_DRESS_INDEX },
+            );
 
         if (dress_param.dress_index < 1 or dress_param.dress_index > Player.Avatar.equipment_count)
-            return session.sink.respondMinimal(.EquipmentSuitDressScRsp, .{ .retcode = 1 });
+            return session.sink.respondMinimal(
+                .EquipmentSuitDressScRsp,
+                .{ .retcode = .RET_AVATAR_INVALID_DRESS_INDEX },
+            );
         const dress_index = dress_param.dress_index - 1;
 
         const equipment_uid: Player.Equipment.Uid = @fromBackingInt(dress_param.equip_uid);
         if (session.player.equipment.getIndexByUid(equipment_uid) == null)
-            return session.sink.respondMinimal(.EquipmentSuitDressScRsp, .{ .retcode = 1 });
+            return session.sink.respondMinimal(
+                .EquipmentSuitDressScRsp,
+                .{ .retcode = .RET_ITEM_NOT_FOUND },
+            );
 
         if (session.player.avatars.getIndexByEquipmentUid(equipment_uid) != null)
-            return session.sink.respondMinimal(.EquipmentSuitDressScRsp, .{ .retcode = 1 });
+            return session.sink.respondMinimal(
+                .EquipmentSuitDressScRsp,
+                .{ .retcode = .RET_AVATAR_OCCUPIED },
+            );
 
         avatar_to_dress.dressed_equipment[dress_index] = .wrap(equipment_uid);
     }
@@ -272,5 +312,5 @@ pub fn EquipmentSuitDressCsReq(session: *Session) !void {
         });
     }
 
-    return session.sink.respondMinimal(.EquipmentSuitDressScRsp, .{ .retcode = 0 });
+    return session.sink.respondMinimal(.EquipmentSuitDressScRsp, .{ .retcode = .RET_SUCC });
 }

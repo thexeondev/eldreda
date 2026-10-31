@@ -34,10 +34,16 @@ pub fn StartTrainingQuestCsReq(session: *Session) !void {
 
     while (try request.avatar_id_list.next()) |avatar_id|
         avatar_id_list.appendBounded(avatar_id) catch
-            return session.sink.respondMinimal(.StartTrainingQuestScRsp, .{ .retcode = 1 });
+            return session.sink.respondMinimal(
+                .StartTrainingQuestScRsp,
+                .{ .retcode = .RET_AVATAR_PARAM_ERROR },
+            );
 
     if (avatar_id_list.items.len == 0)
-        return session.sink.respondMinimal(.StartTrainingQuestScRsp, .{ .retcode = 1 });
+        return session.sink.respondMinimal(
+            .StartTrainingQuestScRsp,
+            .{ .retcode = .RET_AVATAR_PARAM_ERROR },
+        );
 
     const buffer_size = protobuf.pack.AvatarInfoList.bufferSizeFor(Player.Avatar.count_max);
     var buffer: [buffer_size]u8 align(protobuf.pack.AvatarInfoList.alignment) = undefined;
@@ -73,7 +79,7 @@ pub fn StartTrainingQuestCsReq(session: *Session) !void {
         },
     });
 
-    return session.sink.respondMinimal(.StartTrainingQuestScRsp, .{ .retcode = 0 });
+    return session.sink.respondMinimal(.StartTrainingQuestScRsp, .{ .retcode = .RET_SUCC });
 }
 
 pub fn EndBattleCsReq(session: *Session) !void {

@@ -11,6 +11,8 @@ pub const gen = generated.makeNamespace(.{
 
 pub const pack = @import("protobuf/pack.zig");
 
+pub const Retcode = @import("protobuf/retcode.zig").Retcode;
+
 pub const EncodeError = Io.Writer.Error;
 
 pub const Encoding = enum {

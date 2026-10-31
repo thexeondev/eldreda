@@ -20,13 +20,13 @@ pub fn LeaveCurSceneCsReq(session: *Session) !void {
         .scene = protobuf.pack.sceneDataForHall(session.player.main_city),
     });
 
-    return session.sink.respondMinimal(.LeaveCurSceneScRsp, .{ .retcode = 0 });
+    return session.sink.respondMinimal(.LeaveCurSceneScRsp, .{ .retcode = .RET_SUCC });
 }
 
 pub fn EnterSectionCsReq(session: *Session) !void {
     const request = try session.command.decodeBody(protobuf.gen.EnterSectionCsReq.Decoded);
     const section = Player.MainCity.Section.fromInt(request.section_id) orelse
-        return session.sink.respondMinimal(.EnterSectionScRsp, .{ .retcode = 1 });
+        return session.sink.respondMinimal(.EnterSectionScRsp, .{ .retcode = .RET_SCENE_NOT_FOUND });
 
     session.playerModified();
     session.player.main_city.section = section;
@@ -35,5 +35,5 @@ pub fn EnterSectionCsReq(session: *Session) !void {
         .scene = protobuf.pack.sceneDataForHall(session.player.main_city),
     });
 
-    return session.sink.respondMinimal(.EnterSectionScRsp, .{ .retcode = 0 });
+    return session.sink.respondMinimal(.EnterSectionScRsp, .{ .retcode = .RET_SUCC });
 }
