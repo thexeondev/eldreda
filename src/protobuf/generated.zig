@@ -59485,8 +59485,8 @@ pub fn makeNamespace(comptime protobuf: ProtobufOptions) type {
             MBMGBMFDLAO_DGKIAIEIKDA = 2,
             MBMGBMFDLAO_BBPLNKLFMPM = 3,
         };
-        pub const IBKFHGABIGO = struct {
-            pub const message_name = "IBKFHGABIGO";
+        pub const GetFloorActiveGroupListCsReq = struct {
+            pub const message_name = "GetFloorActiveGroupListCsReq";
             pub const cmd_id: u16 = 2811;
             @"BMINEPBLPNI": u32 = 0,
             pub const xor_by_field = struct {
@@ -59499,7 +59499,7 @@ pub fn makeNamespace(comptime protobuf: ProtobufOptions) type {
                 _,
             };
             pub const Decoded = struct {
-                pub const Parent = IBKFHGABIGO;
+                pub const Parent = GetFloorActiveGroupListCsReq;
                 pub const init: @This() = .{};
                 @"BMINEPBLPNI": u32 = 0,
             };
@@ -123065,8 +123065,8 @@ pub fn makeNamespace(comptime protobuf: ProtobufOptions) type {
                 pub const @"HIDDLBBGADE": Encoding = .normal;
             };
         };
-        pub const KPCDHLOGFPD = struct {
-            pub const message_name = "KPCDHLOGFPD";
+        pub const GetFloorActiveGroupListScRsp = struct {
+            pub const message_name = "GetFloorActiveGroupListScRsp";
             pub const cmd_id: u16 = 2002;
             @"FCPDAMJMBJN": []const u32 = &.{},
             @"retcode": i32 = 0,
@@ -123081,7 +123081,7 @@ pub fn makeNamespace(comptime protobuf: ProtobufOptions) type {
                 _,
             };
             pub const Decoded = struct {
-                pub const Parent = KPCDHLOGFPD;
+                pub const Parent = GetFloorActiveGroupListScRsp;
                 pub const init: @This() = .{};
                 @"FCPDAMJMBJN": Iterator(u32) = .empty,
                 @"retcode": i32 = 0,

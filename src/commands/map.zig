@@ -43,3 +43,7 @@ pub fn GetAreaMapDataCsReq(session: *Session) !void {
 pub fn GetNewAreaPortalListCsReq(session: *Session) !void {
     try session.sink.respond(protobuf.gen.GetNewAreaPortalListScRsp, &.{});
 }
+
+pub fn GetFloorActiveGroupListCsReq(session: *Session) !void {
+    return session.sink.respond(protobuf.gen.GetFloorActiveGroupListScRsp, &.{});
+}
