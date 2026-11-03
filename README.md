@@ -28,7 +28,7 @@ To see the available commands and their options, run `eldreda --help`.
 
 Some options can be customized through a configuration file. Default settings are declared in [defaults/eldreda.zon](defaults/eldreda.zon).
 
-Before trying to connect to server, make sure you have the compatible client version (`CNBetaWin3.4.1` at the time of writing) and [eldreda-patch](https://git.xeondev.com/eldreda/eldreda-patch) installed.
+Before trying to connect to server, make sure you have the compatible client version (`CNBetaWin3.4.2` at the time of writing) and [eldreda-patch](https://git.xeondev.com/eldreda/eldreda-patch) installed.
 
 ## Features
 Eldreda is in early state of development and has the following features available:
