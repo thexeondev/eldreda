@@ -16,23 +16,40 @@ pub const Version = struct {
     cdn: Cdn,
 
     pub const Cdn = struct {
-        design_data: struct {
-            base_url: []const u8,
-            data_revision: []const u8,
-            md5_files: []const u8,
-        },
-        game_res: struct {
-            audio_revision: []const u8,
-            base_url: []const u8,
-            branch: []const u8,
-            md5_files: []const u8,
-            res_revision: []const u8,
-        },
-        silence_data: struct {
-            base_url: []const u8,
-            md5_files: []const u8,
-            silence_revision: []const u8,
-        },
+        hotfix: Hotfix,
+        audio_overlay: ?AudioOverlay = null,
+
+        pub const Hotfix = struct {
+            design_data: struct {
+                base_url: []const u8,
+                data_revision: []const u8,
+                md5_files: []const u8,
+            },
+            game_res: struct {
+                audio_revision: []const u8,
+                base_url: []const u8,
+                branch: []const u8,
+                md5_files: []const u8,
+                res_revision: []const u8,
+            },
+            silence_data: struct {
+                base_url: []const u8,
+                md5_files: []const u8,
+                silence_revision: []const u8,
+            },
+        };
+
+        pub const AudioOverlay = struct {
+            upstream_url_prefix_original: []const u8,
+            upstream_url_overlay: []const u8,
+            directory_overlayed: []const u8,
+            base_revision_original: []const u8,
+            base_revision_overlayed: []const u8,
+            last_revision_original: []const u8,
+            last_revision_overlayed: []const u8,
+            audio_version_size: u64,
+            audio_version_md5: []const u8,
+        };
     };
 };
 

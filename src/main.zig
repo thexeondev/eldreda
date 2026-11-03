@@ -205,6 +205,7 @@ pub fn main(init: process.Init.Minimal) !void {
         .region_title = "Eldreda",
         .client_secret_key = conf.client_secret_key,
         .cdn = &conf.version.cdn,
+        .public_url_prefix = public_url_prefix,
         .gateway = switch (gate_address) {
             .ip4 => |ip4| ip4: {
                 // TODO: technically this can be achieved if desired,
@@ -374,6 +375,16 @@ const HttpRequestScope = struct {
             "Content-Length: {d}\r\n" ++
             "\r\n", .{ @backingInt(status), status, content_length });
     }
+
+    fn respondMoved(scope: *const HttpRequestScope, location: []const u8) !void {
+        try scope.stream_writer.print("HTTP/1.1 301\r\n" ++
+            "Connection: Keep-Alive\r\n" ++
+            "Location: {s}\r\n" ++
+            "Content-Length: 0\r\n" ++
+            "\r\n", .{location});
+
+        try scope.stream_writer.flush();
+    }
 };
 
 fn handleHttpClient(
@@ -453,8 +464,13 @@ const HttpPath = enum {
 };
 
 fn serveHttpRequest(io: Io, gpa: Allocator, scope: *const HttpRequestScope) !void {
-    const path = std.meta.stringToEnum(HttpPath, scope.request.line.path) orelse
-        return try scope.fail(.not_found);
+    const path = std.meta.stringToEnum(HttpPath, scope.request.line.path) orelse {
+        if (mem.startsWith(u8, scope.request.line.path, "/game_res")) {
+            return serveGameResOverlay(scope);
+        }
+
+        return scope.fail(.not_found);
+    };
 
     switch (path) {
         .@"/query_dispatch" => {
@@ -489,6 +505,55 @@ fn serveHttpRequest(io: Io, gpa: Allocator, scope: *const HttpRequestScope) !voi
         .@"/nap_global/combo/granter/login/v2/login" => {
             try comboGranter(scope);
         },
+    }
+}
+
+fn serveGameResOverlay(scope: *const HttpRequestScope) !void {
+    const overlay = scope.server.conf.version.cdn.audio_overlay orelse
+        return scope.fail(.not_found);
+
+    const request_path = scope.request.line.path;
+    var redirect_buffer: [1024]u8 = undefined;
+
+    if (mem.endsWith(u8, request_path, "/audio_version")) {
+        const location = mem.print(&redirect_buffer, "{s}/{s}/{s}/audio_version", .{
+            overlay.upstream_url_overlay,
+            overlay.last_revision_overlayed,
+            overlay.directory_overlayed,
+        }) catch return scope.fail(.bad_request);
+
+        return scope.respondMoved(location);
+    } else if (mem.find(u8, request_path, "Audio/")) |file_path_start| {
+        const file_path = request_path[file_path_start..];
+
+        const revision_start = mem.find(u8, request_path, "output_") orelse
+            return scope.fail(.bad_request);
+
+        const request_revision, _ = mem.cutScalar(u8, request_path[revision_start..], '/') orelse
+            .{ request_path[revision_start..], "" };
+
+        const overlay_revision = if (mem.eql(u8, request_revision, overlay.base_revision_original))
+            overlay.base_revision_overlayed
+        else if (mem.eql(u8, request_revision, overlay.last_revision_original))
+            overlay.last_revision_overlayed
+        else
+            request_revision;
+
+        const location = mem.print(
+            &redirect_buffer,
+            "{s}/{s}/{s}/{s}",
+            .{ overlay.upstream_url_overlay, overlay_revision, overlay.directory_overlayed, file_path },
+        ) catch return scope.fail(.bad_request);
+
+        return scope.respondMoved(location);
+    } else {
+        const location = mem.print(
+            &redirect_buffer,
+            "{s}{s}",
+            .{ overlay.upstream_url_prefix_original, request_path },
+        ) catch return scope.fail(.bad_request);
+
+        return scope.respondMoved(location);
     }
 }
 
