@@ -12,7 +12,7 @@ pub const Session = @import("Session.zig");
 pub const commands = @import("commands.zig");
 pub const templates = @import("templates.zig");
 pub const Player = @import("Player.zig");
-pub const StaticMultiArrayList = @import("static_multi_array_list.zig").StaticMultiArrayList;
+pub const BoundedMultiArray = @import("bounded_multi_array.zig").BoundedMultiArray;
 
 test {
     std.testing.refAllDecls(@This());

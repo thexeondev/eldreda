@@ -3,7 +3,7 @@ const std = @import("std");
 const yuzuha = @import("../yuzuha.zig");
 const Player = yuzuha.Player;
 const gen = yuzuha.protobuf.gen;
-const StaticMultiArrayList = yuzuha.StaticMultiArrayList;
+const BoundedMultiArray = yuzuha.BoundedMultiArray;
 
 const Skill = enum(u8) {
     common_attack = 0,
@@ -31,7 +31,7 @@ const skills: [@typeInfo(Skill).@"enum".field_names.len]gen.AvatarSkillLevel = s
     break :skills array;
 };
 
-pub const AvatarInfoList = StaticMultiArrayList(struct {
+pub const AvatarInfoList = BoundedMultiArray(struct {
     avatar_info: gen.AvatarInfo,
     dressed_equip_buffer: [Player.Avatar.equipment_count]gen.DressedEquip,
     mindscape_tab_state: [Player.Avatar.Mindscape.unlocked_max]bool,
@@ -80,7 +80,7 @@ pub fn weaponInfo(out: *gen.WeaponInfo, weapon: Player.Weapon) void {
     };
 }
 
-pub const EquipInfoList = StaticMultiArrayList(struct {
+pub const EquipInfoList = BoundedMultiArray(struct {
     equip_info: gen.EquipInfo,
     main_property: gen.EquipProperty,
     sub_properties_buffer: [Player.Equipment.Property.sub_count]gen.EquipProperty,

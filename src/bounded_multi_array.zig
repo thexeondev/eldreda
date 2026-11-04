@@ -1,7 +1,7 @@
 const std = @import("std");
 const assert = std.debug.assert;
 
-pub fn StaticMultiArrayList(comptime Struct: type, comptime capacity: usize) type {
+pub fn BoundedMultiArray(comptime Struct: type, comptime capacity: usize) type {
     const struct_info = @typeInfo(Struct).@"struct";
 
     return struct {
