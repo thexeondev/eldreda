@@ -15,10 +15,12 @@ const pack = yuzuha.protobuf.pack;
 pub const Sync = struct {
     populated: bool,
     avatar_list: pack.AvatarInfoList,
+    control_guise_avatar_changed: bool,
 
     pub const init: Sync = .{
         .populated = false,
         .avatar_list = .empty,
+        .control_guise_avatar_changed = false,
     };
 };
 
@@ -110,6 +112,19 @@ pub const Equipment = struct {
     };
 };
 
+pub const ControlGuiseAvatar = enum(u32) {
+    wise = 2011,
+    belle = 2021,
+    _,
+
+    pub fn requiresUnlock(guise: ControlGuiseAvatar) bool {
+        return switch (guise) {
+            .wise, .belle => false,
+            _ => true,
+        };
+    }
+};
+
 fn avatarAtIndex(player: *const Player, index: u32) Avatar {
     const storage_avatar = player.storage.avatars.getPtr(index);
 
@@ -158,6 +173,11 @@ pub fn avatars(player: *const Player) Avatar.Iterator {
 
 pub fn weapons(player: *const Player) Weapon.KeyValue.Iterator {
     return .{ .player = player, .index = 0 };
+}
+
+pub fn hasAvatarWithId(player: *const Player, id_int: u32) bool {
+    const id = Storage.Avatar.Id.fromInt(id_int) orelse return false;
+    return player.storage.getAvatarIndexById(id) != null;
 }
 
 pub fn getAvatarById(player: *const Player, id_int: u32) ?Avatar {
@@ -236,6 +256,14 @@ fn updateAvatarAtIndex(player: *Player, avatar_index: u32, avatar: Avatar) void 
     }
 }
 
+pub fn updateControlGuiseAvatar(player: *Player, guise: ControlGuiseAvatar) void {
+    player.needs_save = true;
+    player.storage.role.control_guise_avatar = @fromBackingInt(@backingInt(guise));
+
+    player.sync.populated = true;
+    player.sync.control_guise_avatar_changed = true;
+}
+
 fn appendAvatarToSync(player: *Player, avatar: Avatar) void {
     player.sync.populated = true;
     pack.avatarInfo(player.sync.avatar_list.addOneAssumeCapacity(), avatar);
@@ -244,8 +272,20 @@ fn appendAvatarToSync(player: *Player, avatar: Avatar) void {
 pub fn buildPlayerSyncScNotify(player: *Player) ?gen.PlayerSyncScNotify {
     if (!player.sync.populated) return null;
 
-    var notify: gen.PlayerSyncScNotify = .{};
+    var notify: gen.PlayerSyncScNotify = .{ .misc = .{} };
     notify.avatar = .{ .avatar_list = player.sync.avatar_list.items(.avatar_info) };
+
+    const self_basic_info_needs_sync = player.sync.control_guise_avatar_changed;
+    if (self_basic_info_needs_sync) {
+        notify.self_basic_info = pack.selfBasicInfo(&player.storage.role);
+    }
+
+    const accessory_data_needs_sync = player.sync.control_guise_avatar_changed;
+    if (accessory_data_needs_sync) {
+        notify.misc.?.player_accessory = .{
+            .control_guise_avatar_id = @backingInt(player.storage.role.control_guise_avatar),
+        };
+    }
 
     return notify;
 }

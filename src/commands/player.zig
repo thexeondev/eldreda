@@ -24,28 +24,18 @@ pub fn KeepAliveNotify(_: *Session) !void {}
 
 pub fn ModAvatarCsReq(session: *Session) !void {
     const request = try session.command.decodeBody(protobuf.gen.ModAvatarCsReq.Decoded);
+    const control_guise_avatar: Player.ControlGuiseAvatar = @fromBackingInt(request.control_guise_avatar_id);
 
-    const control_avatar = Player.Storage.Role.Avatar.fromInt(request.control_avatar_id) orelse
-        return session.sink.respondMinimal(.ModAvatarScRsp, .{ .retcode = .RET_AVATAR_PARAM_ERROR });
-
-    const control_guise_avatar = Player.Storage.Role.Guise.fromInt(request.control_guise_avatar_id) orelse
-        return session.sink.respondMinimal(.ModAvatarScRsp, .{ .retcode = .RET_AVATAR_PARAM_ERROR });
-
-    if (control_guise_avatar.toAvatarId()) |avatar_id| {
-        if (session.player.getAvatarById(@backingInt(avatar_id)) == null)
+    if (control_guise_avatar.requiresUnlock()) {
+        if (!session.player.hasAvatarWithId(request.control_guise_avatar_id))
             return session.sink.respondMinimal(
                 .ModAvatarScRsp,
                 .{ .retcode = .RET_AVATAR_PARAM_ERROR },
             );
     }
 
-    session.playerModified();
-    session.player.storage.role.control_avatar = control_avatar;
-    session.player.storage.role.control_guise_avatar = control_guise_avatar;
+    session.player.updateControlGuiseAvatar(control_guise_avatar);
 
-    try session.sink.notify(protobuf.gen.PlayerSyncScNotify, &.{
-        .self_basic_info = protobuf.pack.selfBasicInfo(&session.player.storage.role),
-    });
-
+    try session.notify();
     return session.sink.respondMinimal(.ModAvatarScRsp, .{ .retcode = .RET_SUCC });
 }
