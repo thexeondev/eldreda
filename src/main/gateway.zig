@@ -104,37 +104,39 @@ fn serveConnection(
     var client: Client = undefined;
     client.init(token);
 
-    var player_file_path_buffer: ["4294967295.bin".len]u8 = undefined;
-    const player_file_path = mem.print(&player_file_path_buffer, "{d}.bin", .{client.player_uid}) catch |err| switch (err) {
-        error.NoSpaceLeft => unreachable,
-    };
+    var player_storage_file_path_buffer: ["4294967295.bin".len]u8 = undefined;
+    const player_storage_file_path =
+        mem.print(&player_storage_file_path_buffer, "{d}.bin", .{client.player_uid}) catch |err|
+            switch (err) {
+                error.NoSpaceLeft => unreachable,
+            };
 
-    var player: Player = undefined;
-    var player_load_diagnostics: Player.LoadDiagnostics = undefined;
-    player.loadFromFile(io, .{
+    var player_storage: Player.Storage = undefined;
+    var player_storage_load_diagnostics: Player.Storage.LoadDiagnostics = undefined;
+    player_storage.loadFromFile(io, .{
         .dir = server.storage.player_dir,
-        .sub_path = player_file_path,
-        .diagnostics = &player_load_diagnostics,
+        .sub_path = player_storage_file_path,
+        .diagnostics = &player_storage_load_diagnostics,
     }) catch |err| switch (err) {
         error.Canceled => |e| return e,
         error.FileNotFound => {
-            player.initDefaults();
+            player_storage.initDefaults();
 
             { // TODO: move this into a separate utility
                 var rng: std.Random.DefaultPrng = .init(
                     @bitCast(Io.Clock.now(.real, io).toMilliseconds()),
                 );
 
-                player.addRandomEquipment(rng.random(), 500) catch |e| switch (e) {
+                player_storage.addRandomEquipment(rng.random(), 500) catch |e| switch (e) {
                     error.NoSpaceLeft => unreachable,
                 };
             }
 
-            try player.saveToFile(io, server.storage.player_dir, player_file_path);
+            try player_storage.saveToFile(io, server.storage.player_dir, player_storage_file_path);
         },
         error.CheckDiagnostics => return log.err(
-            "failed to load save file for player with uid {d}:\n{f}",
-            .{ client.player_uid, &player_load_diagnostics },
+            "failed to load storage file for player with uid {d}:\n{f}",
+            .{ client.player_uid, &player_storage_load_diagnostics },
         ),
     };
 
@@ -155,14 +157,14 @@ fn serveConnection(
                 .ack_packet_id = head.packet_id,
             },
             .player_uid = client.player_uid,
-            .player = &player,
+            .player = &player_storage,
             .player_needs_save = false,
         };
 
         try yuzuha.commands.execute(&session);
 
         if (session.player_needs_save) {
-            try player.saveToFile(io, server.storage.player_dir, player_file_path);
+            try player_storage.saveToFile(io, server.storage.player_dir, player_storage_file_path);
         }
 
         try connection.writer_unbuffered.writeAll(send_buffer[0..session.sink.bytes_written]);

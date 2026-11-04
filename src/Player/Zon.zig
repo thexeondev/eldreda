@@ -9,6 +9,7 @@ const Allocator = std.mem.Allocator;
 const yuzuha = @import("../yuzuha.zig");
 const Player = yuzuha.Player;
 const templates = yuzuha.templates;
+const Storage = yuzuha.Player.Storage;
 
 role: Role,
 main_city: MainCity,
@@ -19,10 +20,10 @@ equipment_undressed: []Equipment,
 
 pub const NameMap = struct {
     string_arena: std.heap.ArenaAllocator.State,
-    avatar_id_by_name: std.array_hash_map.String(Player.Avatar.Id),
-    avatar_name_by_id: std.array_hash_map.Auto(Player.Avatar.Id, []const u8),
-    weapon_id_by_name: std.array_hash_map.String(Player.Weapon.Id),
-    weapon_name_by_id: std.array_hash_map.Auto(Player.Weapon.Id, []const u8),
+    avatar_id_by_name: std.array_hash_map.String(Storage.Avatar.Id),
+    avatar_name_by_id: std.array_hash_map.Auto(Storage.Avatar.Id, []const u8),
+    weapon_id_by_name: std.array_hash_map.String(Storage.Weapon.Id),
+    weapon_name_by_id: std.array_hash_map.Auto(Storage.Weapon.Id, []const u8),
     equipment_id_by_name_rarity_s: std.array_hash_map.String(u32),
     equipment_name_by_id_rarity_s: std.array_hash_map.Auto(u32, []const u8),
     section_id_by_name: std.array_hash_map.String(u32),
@@ -33,16 +34,16 @@ pub const NameMap = struct {
         errdefer arena_instance.deinit();
         const arena = arena_instance.allocator();
 
-        var avatar_id_by_name: std.array_hash_map.String(Player.Avatar.Id) = .empty;
+        var avatar_id_by_name: std.array_hash_map.String(Storage.Avatar.Id) = .empty;
         defer avatar_id_by_name.deinit(gpa);
-        var avatar_name_by_id: std.array_hash_map.Auto(Player.Avatar.Id, []const u8) = .empty;
+        var avatar_name_by_id: std.array_hash_map.Auto(Storage.Avatar.Id, []const u8) = .empty;
         defer avatar_name_by_id.deinit(gpa);
 
         for (
             templates.AvatarBase.table.items(.id),
             templates.AvatarBase.table.items(.code_name),
         ) |id_int, code_name| {
-            const id = Player.Avatar.Id.fromInt(id_int) orelse continue;
+            const id = Storage.Avatar.Id.fromInt(id_int) orelse continue;
 
             const code_name_slice = templates.AvatarBase.table.getString(code_name);
             const code_name_text = text_map.get(code_name_slice) orelse code_name_slice;
@@ -51,16 +52,16 @@ pub const NameMap = struct {
             try avatar_name_by_id.putNoClobber(gpa, id, code_name_text);
         }
 
-        var weapon_id_by_name: std.array_hash_map.String(Player.Weapon.Id) = .empty;
+        var weapon_id_by_name: std.array_hash_map.String(Storage.Weapon.Id) = .empty;
         defer weapon_id_by_name.deinit(gpa);
-        var weapon_name_by_id: std.array_hash_map.Auto(Player.Weapon.Id, []const u8) = .empty;
+        var weapon_name_by_id: std.array_hash_map.Auto(Storage.Weapon.Id, []const u8) = .empty;
         defer weapon_name_by_id.deinit(gpa);
 
         for (
             templates.Weapon.table.items(.id),
             templates.Weapon.table.items(.weapon_name),
         ) |id_int, weapon_name| {
-            const id = Player.Weapon.Id.fromInt(id_int) orelse continue;
+            const id = Storage.Weapon.Id.fromInt(id_int) orelse continue;
 
             const weapon_name_unformatted = templates.Weapon.table.getString(weapon_name);
             const weapon_name_slice = try arena.print("Item_{s}_Name", .{weapon_name_unformatted});
@@ -139,19 +140,19 @@ pub const NameMap = struct {
         name_map: *const NameMap,
         name: []const u8,
         rarity: Equipment.Id.Rarity,
-    ) ?Player.Equipment.Id {
+    ) ?Storage.Equipment.Id {
         const id_rarity_s = name_map.equipment_id_by_name_rarity_s.get(name) orelse return null;
         const slot = id_rarity_s % 10;
         const id_int = ((id_rarity_s / 100) * 100) +
             (@backingInt(rarity) * 10) +
             slot;
 
-        return Player.Equipment.Id.fromInt(id_int);
+        return Storage.Equipment.Id.fromInt(id_int);
     }
 
     pub fn getEquipmentNameAndRarityById(
         name_map: *const NameMap,
-        id: Player.Equipment.Id,
+        id: Storage.Equipment.Id,
     ) Equipment.Id {
         const id_int = @backingInt(id);
         const slot = id_int % 10;
@@ -174,19 +175,19 @@ pub const Role = struct {
     control_guise_avatar: []const u8,
 };
 
-const player_role_avatar_by_name: std.StaticStringMap(Player.Role.Avatar) = .initComptime(.{
+const player_role_avatar_by_name: std.StaticStringMap(Storage.Role.Avatar) = .initComptime(.{
     .{ "Wise", .wise },
     .{ "Belle", .belle },
 });
 
-const name_by_player_role_avatar: std.EnumArray(Player.Role.Avatar, []const u8) = .init(.{
+const name_by_player_role_avatar: std.EnumArray(Storage.Role.Avatar, []const u8) = .init(.{
     .wise = "Wise",
     .belle = "Belle",
 });
 
 pub const Time = struct {
-    day: Player.Time.Day,
-    period: Player.Time.Period,
+    day: Storage.Time.Day,
+    period: Storage.Time.Period,
 };
 
 pub const Avatar = struct {
@@ -195,7 +196,7 @@ pub const Avatar = struct {
     rank: u32,
     favorite: bool,
     unlocked_mindscape: u32,
-    mindscape_tab_state: [Player.Avatar.Mindscape.unlocked_max]bool,
+    mindscape_tab_state: [Storage.Avatar.Mindscape.unlocked_max]bool,
     show_weapon_status: ShowWeaponStatus,
     weapon: ?Weapon,
     equipment: EquipmentSlots,
@@ -220,7 +221,7 @@ pub const Weapon = struct {
     name: []const u8,
     refine: u32,
 
-    fn init(data: Player.Weapon, name_map: *const NameMap) Weapon {
+    fn init(data: Storage.Weapon, name_map: *const NameMap) Weapon {
         return .{
             .name = name_map.weapon_name_by_id.get(data.bits.id).?,
             .refine = @backingInt(data.bits.refine),
@@ -231,7 +232,7 @@ pub const Weapon = struct {
         weapon: Weapon,
         name_map: *const NameMap,
         diag: *PackDiagnostics,
-    ) PackError!Player.Weapon {
+    ) PackError!Storage.Weapon {
         return .{
             .uid_maybe = .none,
             .bits = .{
@@ -239,7 +240,7 @@ pub const Weapon = struct {
                     .name_invalid,
                     .{ .kind = "weapon", .name = weapon.name },
                 ),
-                .refine = Player.Weapon.Refine.fromInt(weapon.refine) orelse return diag.fail(
+                .refine = Storage.Weapon.Refine.fromInt(weapon.refine) orelse return diag.fail(
                     .weapon_refine_invalid,
                     .{ .name = weapon.name, .encountered = weapon.refine },
                 ),
@@ -274,7 +275,7 @@ pub const Equipment = struct {
     pub const MainProperty = struct {
         key: []const u8,
 
-        fn init(data: Player.Equipment.Property) MainProperty {
+        fn init(data: Storage.Equipment.Property) MainProperty {
             const key: Key = @fromBackingInt(@backingInt(data.key));
 
             return .{ .key = Key.names.get(key) };
@@ -283,7 +284,7 @@ pub const Equipment = struct {
         fn pack(
             main_property: MainProperty,
             diag: *PackDiagnostics,
-        ) PackError!Player.Equipment.Property {
+        ) PackError!Storage.Equipment.Property {
             const key = Key.by_name.get(main_property.key) orelse return diag.fail(
                 .name_invalid,
                 .{ .kind = "main property key", .name = main_property.key },
@@ -326,7 +327,7 @@ pub const Equipment = struct {
         key: []const u8,
         @"+": u16,
 
-        fn init(data: Player.Equipment.Property) SubProperty {
+        fn init(data: Storage.Equipment.Property) SubProperty {
             const key: Key = @fromBackingInt(@backingInt(data.key));
 
             return .{
@@ -338,7 +339,7 @@ pub const Equipment = struct {
         fn pack(
             sub_property: SubProperty,
             diag: *PackDiagnostics,
-        ) PackError!Player.Equipment.Property {
+        ) PackError!Storage.Equipment.Property {
             const key = Key.by_name.get(sub_property.key) orelse return diag.fail(
                 .name_invalid,
                 .{ .kind = "sub property key", .name = sub_property.key },
@@ -437,7 +438,7 @@ pub const Equipment = struct {
         });
     };
 
-    fn init(data: Player.Equipment, name_map: *const NameMap) Equipment {
+    fn init(data: Storage.Equipment, name_map: *const NameMap) Equipment {
         return .{
             .id = name_map.getEquipmentNameAndRarityById(data.bits.id),
             .main_property = .init(data.bits.main_property),
@@ -454,7 +455,7 @@ pub const Equipment = struct {
         equipment: Equipment,
         name_map: *const NameMap,
         diag: *PackDiagnostics,
-    ) PackError!Player.Equipment {
+    ) PackError!Storage.Equipment {
         return .{
             .uid_maybe = .none,
             .bits = .{
@@ -467,8 +468,8 @@ pub const Equipment = struct {
                 ),
                 .main_property = try equipment.main_property.pack(diag),
                 .sub_properties = sub_properties: {
-                    const sub_properties_count = Player.Equipment.Property.sub_count;
-                    var sub_properties: [sub_properties_count]Player.Equipment.Property.Optional =
+                    const sub_properties_count = Storage.Equipment.Property.sub_count;
+                    var sub_properties: [sub_properties_count]Storage.Equipment.Property.Optional =
                         undefined;
 
                     inline for (
@@ -489,7 +490,7 @@ pub const Equipment = struct {
     }
 };
 
-pub fn init(arena: Allocator, name_map: *const NameMap, player: *Player) Allocator.Error!Zon {
+pub fn init(arena: Allocator, name_map: *const NameMap, player: *Storage) Allocator.Error!Zon {
     const role: Role = .{
         .avatar = name_by_player_role_avatar.get(player.role.avatar),
         .control_avatar = name_by_player_role_avatar.get(player.role.control_avatar),
@@ -617,7 +618,7 @@ pub const PackDiagnostics = union(enum) {
     avatar_mindscape_invalid: struct {
         avatar_name: []const u8,
         unlocked: u32,
-        tab_state: [Player.Avatar.Mindscape.unlocked_max]bool,
+        tab_state: [Storage.Avatar.Mindscape.unlocked_max]bool,
     },
     weapon_refine_invalid: struct {
         name: []const u8,
@@ -653,8 +654,8 @@ pub const PackDiagnostics = union(enum) {
             .weapon_refine_invalid => |details| return writer.print(
                 "weapon {q} has an invalid refine value ({d}, expected {d}-{d})",
                 .{
-                    details.name,             details.encountered,
-                    Player.Weapon.Refine.min, Player.Weapon.Refine.max,
+                    details.name,              details.encountered,
+                    Storage.Weapon.Refine.min, Storage.Weapon.Refine.max,
                 },
             ),
         }
@@ -673,17 +674,17 @@ pub const PackDiagnostics = union(enum) {
 pub const PackError = error{CheckDiagnostics};
 
 pub fn pack(
-    zon: *const Player.Zon,
+    zon: *const Zon,
     name_map: *const NameMap,
     diag: *PackDiagnostics,
-) PackError!Player {
+) PackError!Storage {
     const section_id_int = name_map.section_id_by_name.get(zon.main_city.section) orelse
         return diag.fail(
             .name_invalid,
             .{ .kind = "section", .name = zon.main_city.section },
         );
 
-    var player: Player = .{
+    var player: Storage = .{
         .avatars = .empty,
         .weapons = .empty,
         .equipment = .empty,
@@ -716,19 +717,19 @@ pub fn pack(
     };
 
     for (zon.avatars) |avatar_zon| {
-        const weapon_uid_maybe: Player.Weapon.Uid.Optional = if (avatar_zon.weapon) |weapon_zon| add: {
+        const weapon_uid_maybe: Storage.Weapon.Uid.Optional = if (avatar_zon.weapon) |weapon_zon| add: {
             const weapon = try weapon_zon.pack(name_map, diag);
             const weapon_uid = player.weapons.add(weapon) catch |err| switch (err) {
                 error.NoSpaceLeft => return diag.fail(.limit_exceeded, .{
                     .name = "weapons",
-                    .limit = Player.Weapon.count_max,
+                    .limit = Storage.Weapon.count_max,
                 }),
             };
 
             break :add .wrap(weapon_uid);
         } else .none;
 
-        var dressed_equipment: [Player.Avatar.equipment_count]Player.Equipment.Uid.Optional =
+        var dressed_equipment: [Storage.Avatar.equipment_count]Storage.Equipment.Uid.Optional =
             undefined;
 
         inline for (
@@ -741,7 +742,7 @@ pub fn pack(
                     .wrap(player.equipment.add(equipment) catch |err| switch (err) {
                         error.NoSpaceLeft => return diag.fail(.limit_exceeded, .{
                             .name = "equipment",
-                            .limit = Player.Equipment.count_max,
+                            .limit = Storage.Equipment.count_max,
                         }),
                     });
             } else {
@@ -749,13 +750,13 @@ pub fn pack(
             }
         }
 
-        const avatar: Player.Avatar = .{
+        const avatar: Storage.Avatar = .{
             .id = name_map.avatar_id_by_name.get(avatar_zon.name) orelse return diag.fail(
                 .name_invalid,
                 .{ .kind = "avatar", .name = avatar_zon.name },
             ),
             .bits = .{
-                .level_up = Player.Avatar.LevelUp.fromRankAndLevel(
+                .level_up = Storage.Avatar.LevelUp.fromRankAndLevel(
                     avatar_zon.rank,
                     avatar_zon.level,
                 ) orelse return diag.fail(.avatar_level_up_invalid, .{
@@ -763,7 +764,7 @@ pub fn pack(
                     .rank = avatar_zon.rank,
                     .level = avatar_zon.level,
                 }),
-                .mindscape = Player.Avatar.Mindscape.fromUnlockedAndSwitches(
+                .mindscape = Storage.Avatar.Mindscape.fromUnlockedAndSwitches(
                     avatar_zon.unlocked_mindscape,
                     avatar_zon.mindscape_tab_state,
                 ) orelse return diag.fail(
@@ -788,7 +789,7 @@ pub fn pack(
         const result = player.avatars.getOrAdd(avatar) catch |err| switch (err) {
             error.NoSpaceLeft => return diag.fail(.limit_exceeded, .{
                 .name = "avatars",
-                .limit = Player.Avatar.count_max,
+                .limit = Storage.Avatar.count_max,
             }),
         };
 
@@ -802,7 +803,7 @@ pub fn pack(
         _ = player.weapons.add(weapon) catch |err| switch (err) {
             error.NoSpaceLeft => return diag.fail(.limit_exceeded, .{
                 .name = "weapons",
-                .limit = Player.Weapon.count_max,
+                .limit = Storage.Weapon.count_max,
             }),
         };
     }
@@ -812,7 +813,7 @@ pub fn pack(
         _ = player.equipment.add(equipment) catch |err| switch (err) {
             error.NoSpaceLeft => return diag.fail(.limit_exceeded, .{
                 .name = "equipment",
-                .limit = Player.Equipment.count_max,
+                .limit = Storage.Equipment.count_max,
             }),
         };
     }

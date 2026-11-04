@@ -33,11 +33,11 @@ const skills: [@typeInfo(Skill).@"enum".field_names.len]gen.AvatarSkillLevel = s
 
 pub const AvatarInfoList = BoundedMultiArray(struct {
     avatar_info: gen.AvatarInfo,
-    dressed_equip_buffer: [Player.Avatar.equipment_count]gen.DressedEquip,
-    mindscape_tab_state: [Player.Avatar.Mindscape.unlocked_max]bool,
-}, Player.Avatar.count_max);
+    dressed_equip_buffer: [Player.Storage.Avatar.equipment_count]gen.DressedEquip,
+    mindscape_tab_state: [Player.Storage.Avatar.Mindscape.unlocked_max]bool,
+}, Player.Storage.Avatar.count_max);
 
-pub fn avatarInfo(out: AvatarInfoList.Ptr, avatar: Player.Avatar) void {
+pub fn avatarInfo(out: AvatarInfoList.Ptr, avatar: Player.Storage.Avatar) void {
     var dressed_equip: std.ArrayList(gen.DressedEquip) = .initBuffer(out.dressed_equip_buffer);
 
     for (avatar.dressed_equipment, 1..) |equipment_uid_maybe, slot_index| {
@@ -70,7 +70,7 @@ pub fn avatarInfo(out: AvatarInfoList.Ptr, avatar: Player.Avatar) void {
     };
 }
 
-pub fn weaponInfo(out: *gen.WeaponInfo, weapon: Player.Weapon) void {
+pub fn weaponInfo(out: *gen.WeaponInfo, weapon: Player.Storage.Weapon) void {
     out.* = .{
         .uid = @backingInt(weapon.uid_maybe.unwrap().?),
         .id = @backingInt(weapon.bits.id),
@@ -83,10 +83,10 @@ pub fn weaponInfo(out: *gen.WeaponInfo, weapon: Player.Weapon) void {
 pub const EquipInfoList = BoundedMultiArray(struct {
     equip_info: gen.EquipInfo,
     main_property: gen.EquipProperty,
-    sub_properties_buffer: [Player.Equipment.Property.sub_count]gen.EquipProperty,
-}, Player.Equipment.count_max);
+    sub_properties_buffer: [Player.Storage.Equipment.Property.sub_count]gen.EquipProperty,
+}, Player.Storage.Equipment.count_max);
 
-pub fn equipInfo(out: EquipInfoList.Ptr, equipment: Player.Equipment) void {
+pub fn equipInfo(out: EquipInfoList.Ptr, equipment: Player.Storage.Equipment) void {
     out.main_property.* = .{
         .key = @backingInt(equipment.bits.main_property.key),
         .base_value = equipment.bits.main_property.base,
@@ -116,9 +116,9 @@ pub fn equipInfo(out: EquipInfoList.Ptr, equipment: Player.Equipment) void {
 }
 
 pub const HallOptions = struct {
-    main_city: *const Player.MainCity,
-    role: *const Player.Role,
-    time: *const Player.Time,
+    main_city: *const Player.Storage.MainCity,
+    role: *const Player.Storage.Role,
+    time: *const Player.Storage.Time,
 };
 
 pub fn sceneDataForHall(options: HallOptions) gen.SceneData {
@@ -138,7 +138,7 @@ pub fn hall(comptime Root: type, options: HallOptions) Root {
     };
 }
 
-pub fn selfBasicInfo(role: *const Player.Role) gen.SelfBasicInfo {
+pub fn selfBasicInfo(role: *const Player.Storage.Role) gen.SelfBasicInfo {
     return .{
         .nick_name = "xeondev",
         .level = 1,

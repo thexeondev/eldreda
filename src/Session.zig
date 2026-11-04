@@ -13,7 +13,7 @@ time: Io.Timestamp,
 command: Command,
 sink: Sink,
 player_uid: u32,
-player: *Player,
+player: *Player.Storage,
 player_needs_save: bool,
 
 pub const Error = protobuf.DecodeError || Command.EncodeError;

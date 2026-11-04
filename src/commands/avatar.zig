@@ -58,7 +58,7 @@ pub fn AvatarFavoriteCsReq(session: *Session) !void {
 
 pub fn WeaponDressCsReq(session: *Session) !void {
     const request = try session.command.decodeBody(protobuf.gen.WeaponDressCsReq.Decoded);
-    const weapon_uid: Player.Weapon.Uid = @fromBackingInt(request.weapon_uid);
+    const weapon_uid: Player.Storage.Weapon.Uid = @fromBackingInt(request.weapon_uid);
 
     const weapon_index = session.player.weapons.getIndexByUid(weapon_uid) orelse
         return session.sink.respondMinimal(.WeaponDressScRsp, .{ .retcode = .RET_ITEM_NOT_FOUND });
@@ -136,9 +136,9 @@ pub fn WeaponUnDressCsReq(session: *Session) !void {
 
 pub fn EquipmentDressCsReq(session: *Session) !void {
     const request = try session.command.decodeBody(protobuf.gen.EquipmentDressCsReq.Decoded);
-    const equipment_uid: Player.Equipment.Uid = @fromBackingInt(request.equip_uid);
+    const equipment_uid: Player.Storage.Equipment.Uid = @fromBackingInt(request.equip_uid);
 
-    if (request.dress_index < 1 or request.dress_index > Player.Avatar.equipment_count)
+    if (request.dress_index < 1 or request.dress_index > Player.Storage.Avatar.equipment_count)
         return session.sink.respondMinimal(
             .EquipmentDressScRsp,
             .{ .retcode = .RET_AVATAR_INVALID_DRESS_INDEX },
@@ -196,13 +196,13 @@ pub fn EquipmentUnDressCsReq(session: *Session) !void {
     while (try request.undress_index_list.next()) |undress_index_plus_one| {
         defer undressed_count += 1;
 
-        if (undressed_count == Player.Avatar.equipment_count)
+        if (undressed_count == Player.Storage.Avatar.equipment_count)
             return session.sink.respondMinimal(
                 .EquipmentUnDressScRsp,
                 .{ .retcode = .RET_AVATAR_INVALID_DRESS_INDEX },
             );
 
-        if (undress_index_plus_one < 1 or undress_index_plus_one > Player.Avatar.equipment_count)
+        if (undress_index_plus_one < 1 or undress_index_plus_one > Player.Storage.Avatar.equipment_count)
             return session.sink.respondMinimal(
                 .EquipmentUnDressScRsp,
                 .{ .retcode = .RET_AVATAR_INVALID_DRESS_INDEX },
@@ -248,20 +248,20 @@ pub fn EquipmentSuitDressCsReq(session: *Session) !void {
     while (try request.param_list.next()) |dress_param| {
         defer dressed_count += 1;
 
-        if (dressed_count == Player.Avatar.equipment_count)
+        if (dressed_count == Player.Storage.Avatar.equipment_count)
             return session.sink.respondMinimal(
                 .EquipmentSuitDressScRsp,
                 .{ .retcode = .RET_AVATAR_INVALID_DRESS_INDEX },
             );
 
-        if (dress_param.dress_index < 1 or dress_param.dress_index > Player.Avatar.equipment_count)
+        if (dress_param.dress_index < 1 or dress_param.dress_index > Player.Storage.Avatar.equipment_count)
             return session.sink.respondMinimal(
                 .EquipmentSuitDressScRsp,
                 .{ .retcode = .RET_AVATAR_INVALID_DRESS_INDEX },
             );
         const dress_index = dress_param.dress_index - 1;
 
-        const equipment_uid: Player.Equipment.Uid = @fromBackingInt(dress_param.equip_uid);
+        const equipment_uid: Player.Storage.Equipment.Uid = @fromBackingInt(dress_param.equip_uid);
         if (session.player.equipment.getIndexByUid(equipment_uid) == null)
             return session.sink.respondMinimal(
                 .EquipmentSuitDressScRsp,

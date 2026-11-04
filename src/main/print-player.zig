@@ -65,12 +65,12 @@ pub fn run(io: Io, gpa: Allocator, args_slice: []const []const u8) !void {
     var name_map: Player.Zon.NameMap = try .init(gpa, &text_map);
     defer name_map.deinit(gpa);
 
-    var player: Player = undefined;
-    var player_diag: Player.LoadDiagnostics = undefined;
-    player.loadFromFile(io, .{
+    var storage: Player.Storage = undefined;
+    var storage_diag: Player.Storage.LoadDiagnostics = undefined;
+    storage.loadFromFile(io, .{
         .dir = .cwd(),
         .sub_path = input_path,
-        .diagnostics = &player_diag,
+        .diagnostics = &storage_diag,
     }) catch |err| switch (err) {
         error.Canceled => |e| return e,
         error.FileNotFound => {
@@ -78,12 +78,12 @@ pub fn run(io: Io, gpa: Allocator, args_slice: []const []const u8) !void {
             process.exit(1);
         },
         error.CheckDiagnostics => {
-            log.err("failed to read player save file:\n{f}", .{&player_diag});
+            log.err("failed to read player save file:\n{f}", .{&storage_diag});
             process.exit(1);
         },
     };
 
-    const player_zon: Player.Zon = try .init(arena, &name_map, &player);
+    const player_zon: Player.Zon = try .init(arena, &name_map, &storage);
 
     const output_file = Io.Dir.cwd().createFile(io, output_path, .{}) catch |err| {
         log.err("failed to create output file {q}: {t}", .{ output_path, err });

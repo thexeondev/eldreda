@@ -25,10 +25,10 @@ pub fn KeepAliveNotify(_: *Session) !void {}
 pub fn ModAvatarCsReq(session: *Session) !void {
     const request = try session.command.decodeBody(protobuf.gen.ModAvatarCsReq.Decoded);
 
-    const control_avatar = Player.Role.Avatar.fromInt(request.control_avatar_id) orelse
+    const control_avatar = Player.Storage.Role.Avatar.fromInt(request.control_avatar_id) orelse
         return session.sink.respondMinimal(.ModAvatarScRsp, .{ .retcode = .RET_AVATAR_PARAM_ERROR });
 
-    const control_guise_avatar = Player.Role.Guise.fromInt(request.control_guise_avatar_id) orelse
+    const control_guise_avatar = Player.Storage.Role.Guise.fromInt(request.control_guise_avatar_id) orelse
         return session.sink.respondMinimal(.ModAvatarScRsp, .{ .retcode = .RET_AVATAR_PARAM_ERROR });
 
     if (control_guise_avatar.toAvatarId()) |avatar_id| {

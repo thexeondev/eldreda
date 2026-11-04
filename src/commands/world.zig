@@ -35,7 +35,7 @@ pub fn LeaveCurSceneCsReq(session: *Session) !void {
 
 pub fn EnterSectionCsReq(session: *Session) !void {
     const request = try session.command.decodeBody(protobuf.gen.EnterSectionCsReq.Decoded);
-    const section = Player.MainCity.Section.fromInt(request.section_id) orelse
+    const section = Player.Storage.MainCity.Section.fromInt(request.section_id) orelse
         return session.sink.respondMinimal(.EnterSectionScRsp, .{ .retcode = .RET_SCENE_NOT_FOUND });
 
     session.playerModified();
@@ -61,7 +61,7 @@ pub fn ModMainCityTimeCsReq(session: *Session) !void {
             .{ .retcode = .RET_INVALID_REQUEST_DATA },
         );
 
-    const next_time_period_maybe: ?Player.Time.Period = switch (period_tag) {
+    const next_time_period_maybe: ?Player.Storage.Time.Period = switch (period_tag) {
         .TimePeriodType_MORNING => .morning,
         .TimePeriodType_AFTERNOON => .afternoon,
         .TimePeriodType_EVENING => .evening,
