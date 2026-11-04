@@ -45,10 +45,7 @@ pub fn StartTrainingQuestCsReq(session: *Session) !void {
             .{ .retcode = .RET_AVATAR_PARAM_ERROR },
         );
 
-    const buffer_size = protobuf.pack.AvatarInfoList.bufferSizeFor(Player.Avatar.count_max);
-    var buffer: [buffer_size]u8 align(protobuf.pack.AvatarInfoList.alignment) = undefined;
-    var avatar_list: protobuf.pack.AvatarInfoList = .init(&buffer);
-
+    var avatar_list: protobuf.pack.AvatarInfoList = .empty;
     for (
         session.player.avatars.ids(),
         session.player.avatars.bits(),

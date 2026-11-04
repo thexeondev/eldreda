@@ -7,9 +7,7 @@ const protobuf = yuzuha.protobuf;
 const templates = yuzuha.templates;
 
 pub fn GetAvatarDataCsReq(session: *Session) !void {
-    const buffer_size = protobuf.pack.AvatarInfoList.bufferSizeFor(Player.Avatar.count_max);
-    var buffer: [buffer_size]u8 align(protobuf.pack.AvatarInfoList.alignment) = undefined;
-    var avatar_list: protobuf.pack.AvatarInfoList = .init(&buffer);
+    var avatar_list: protobuf.pack.AvatarInfoList = .empty;
 
     for (
         session.player.avatars.ids(),
@@ -47,11 +45,7 @@ pub fn AvatarFavoriteCsReq(session: *Session) !void {
         session.playerModified();
         session.player.avatars.replaceAt(index, avatar);
 
-        const avatar_buffer_size = protobuf.pack.AvatarInfoList.bufferSizeFor(1);
-        var avatar_buffer: [avatar_buffer_size]u8 align(protobuf.pack.AvatarInfoList.alignment) =
-            undefined;
-        var avatar_list: protobuf.pack.AvatarInfoList = .init(&avatar_buffer);
-
+        var avatar_list: protobuf.pack.AvatarInfoList = .empty;
         protobuf.pack.avatarInfo(avatar_list.addOne(), avatar);
 
         try session.sink.notify(protobuf.gen.PlayerSyncScNotify, &.{
@@ -77,10 +71,7 @@ pub fn WeaponDressCsReq(session: *Session) !void {
 
     session.playerModified();
 
-    const avatar_buffer_size = protobuf.pack.AvatarInfoList.bufferSizeFor(2);
-    var avatar_buffer: [avatar_buffer_size]u8 align(protobuf.pack.AvatarInfoList.alignment) =
-        undefined;
-    var avatar_sync: protobuf.pack.AvatarInfoList = .init(&avatar_buffer);
+    var avatar_sync: protobuf.pack.AvatarInfoList = .empty;
 
     if (session.player.avatars.getByWeaponUid(weapon_uid)) |previous_owner| {
         const avatar_to_undress_index, var avatar_to_undress = previous_owner;
@@ -132,10 +123,7 @@ pub fn WeaponUnDressCsReq(session: *Session) !void {
     avatar_to_undress.weapon_uid_maybe = .none;
     session.player.avatars.replaceAt(avatar_to_undress_index, avatar_to_undress);
 
-    const avatar_buffer_size = protobuf.pack.AvatarInfoList.bufferSizeFor(1);
-    var avatar_buffer: [avatar_buffer_size]u8 align(protobuf.pack.AvatarInfoList.alignment) =
-        undefined;
-    var avatar_list: protobuf.pack.AvatarInfoList = .init(&avatar_buffer);
+    var avatar_list: protobuf.pack.AvatarInfoList = .empty;
 
     protobuf.pack.avatarInfo(avatar_list.addOne(), avatar_to_undress);
 
@@ -165,10 +153,7 @@ pub fn EquipmentDressCsReq(session: *Session) !void {
         session.player.avatars.get(request.avatar_id) orelse
         return session.sink.respondMinimal(.EquipmentDressScRsp, .{ .retcode = .RET_AVATAR_PARAM_ERROR });
 
-    const avatar_buffer_size = protobuf.pack.AvatarInfoList.bufferSizeFor(2);
-    var avatar_buffer: [avatar_buffer_size]u8 align(protobuf.pack.AvatarInfoList.alignment) =
-        undefined;
-    var avatar_sync: protobuf.pack.AvatarInfoList = .init(&avatar_buffer);
+    var avatar_sync: protobuf.pack.AvatarInfoList = .empty;
 
     if (session.player.avatars.getByEquipmentUid(equipment_uid)) |previous_owner| {
         if (previous_owner.avatar_index == avatar_to_dress_index)
@@ -238,11 +223,7 @@ pub fn EquipmentUnDressCsReq(session: *Session) !void {
         session.player.avatars.replaceAt(avatar_to_undress_index, avatar_to_undress);
         session.playerModified();
 
-        const avatar_buffer_size = protobuf.pack.AvatarInfoList.bufferSizeFor(1);
-        var avatar_buffer: [avatar_buffer_size]u8 align(protobuf.pack.AvatarInfoList.alignment) =
-            undefined;
-        var avatar_list: protobuf.pack.AvatarInfoList = .init(&avatar_buffer);
-
+        var avatar_list: protobuf.pack.AvatarInfoList = .empty;
         protobuf.pack.avatarInfo(avatar_list.addOne(), avatar_to_undress);
 
         try session.sink.notify(protobuf.gen.PlayerSyncScNotify, &.{
@@ -300,11 +281,7 @@ pub fn EquipmentSuitDressCsReq(session: *Session) !void {
         session.player.avatars.replaceAt(avatar_to_dress_index, avatar_to_dress);
         session.playerModified();
 
-        const avatar_buffer_size = protobuf.pack.AvatarInfoList.bufferSizeFor(1);
-        var avatar_buffer: [avatar_buffer_size]u8 align(protobuf.pack.AvatarInfoList.alignment) =
-            undefined;
-        var avatar_list: protobuf.pack.AvatarInfoList = .init(&avatar_buffer);
-
+        var avatar_list: protobuf.pack.AvatarInfoList = .empty;
         protobuf.pack.avatarInfo(avatar_list.addOne(), avatar_to_dress);
 
         try session.sink.notify(protobuf.gen.PlayerSyncScNotify, &.{

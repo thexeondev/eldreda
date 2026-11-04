@@ -1,53 +1,26 @@
 const std = @import("std");
 const assert = std.debug.assert;
 
-pub fn StaticMultiArrayList(comptime Struct: type) type {
+pub fn StaticMultiArrayList(comptime Struct: type, comptime capacity: usize) type {
     const struct_info = @typeInfo(Struct).@"struct";
 
     return struct {
+        count: usize,
+        arrays: Arrays,
+
         const List = @This();
 
-        const size_of_one = size_of_one: {
-            var size: usize = 0;
-
-            @setEvalBranchQuota(struct_info.field_types.len);
-            for (struct_info.field_types) |FieldType|
-                size += @sizeOf(FieldType);
-
-            break :size_of_one size;
+        pub const empty: List = .{
+            .count = 0,
+            .arrays = undefined,
         };
 
-        pub const alignment = highest_alignment: {
-            @setEvalBranchQuota(struct_info.field_names.len);
-            var prev_align = @alignOf(struct_info.field_types[0]);
+        pub const Arrays = Arrays: {
+            var array_types: [struct_info.field_types.len]type = undefined;
+            for (&array_types, struct_info.field_types) |*Array, Item|
+                Array.* = [capacity]Item;
 
-            for (struct_info.field_types[1..]) |FieldType| {
-                const next_align = @alignOf(FieldType);
-                assert(prev_align >= next_align); // struct fields must be ordered by alignment.
-                prev_align = next_align;
-            }
-
-            break :highest_alignment @alignOf(struct_info.field_types[0]);
-        };
-
-        count: usize,
-        buffer: []align(alignment) u8,
-        offsets: Slice,
-
-        pub const Slice = Slice: {
-            var slice_field_types: [struct_info.field_types.len]type = undefined;
-
-            @setEvalBranchQuota(slice_field_types.len);
-            for (&slice_field_types, struct_info.field_types) |*SliceField, StructField|
-                SliceField.* = []StructField;
-
-            break :Slice @Struct(
-                .auto,
-                null,
-                struct_info.field_names,
-                &slice_field_types,
-                &@splat(.{}),
-            );
+            break :Arrays @Struct(.auto, null, struct_info.field_names, &array_types, &@splat(.{}));
         };
 
         pub const Ptr = Ptr: {
@@ -66,36 +39,8 @@ pub fn StaticMultiArrayList(comptime Struct: type) type {
             );
         };
 
-        /// Inline function so that `bufferSizeFor` is known at comptime.
-        pub inline fn bufferSizeFor(n: usize) usize {
-            return size_of_one * n;
-        }
-
-        pub fn init(buffer: []align(alignment) u8) List {
-            const n = @divExact(buffer.len, size_of_one);
-
-            var offsets: Slice = undefined;
-            comptime var offset: usize = 0;
-
-            @setEvalBranchQuota(struct_info.field_names.len);
-            inline for (struct_info.field_names, struct_info.field_types) |field_name, FieldType| {
-                @field(offsets, field_name) = @as(
-                    [*]FieldType,
-                    @ptrCast(@alignCast(buffer.ptr[offset * n ..])),
-                )[0..n];
-
-                offset += @sizeOf(FieldType);
-            }
-
-            return .{ .count = 0, .buffer = buffer, .offsets = offsets };
-        }
-
-        pub fn capacity(list: *const List) usize {
-            return @divExact(list.buffer.len, size_of_one);
-        }
-
         pub fn addOne(list: *List) Ptr {
-            assert(list.capacity() > list.count);
+            assert(capacity > list.count);
             const index = list.count;
             defer list.count += 1;
 
@@ -109,12 +54,12 @@ pub fn StaticMultiArrayList(comptime Struct: type) type {
                 @field(ptr, field_name).* = @field(item, field_name);
         }
 
-        pub fn getPtr(list: *const List, index: usize) Ptr {
+        pub fn getPtr(list: *List, index: usize) Ptr {
             var ptr: Ptr = undefined;
 
             @setEvalBranchQuota(struct_info.field_names.len);
             inline for (struct_info.field_names) |field_name|
-                @field(ptr, field_name) = &@field(list.offsets, field_name)[index];
+                @field(ptr, field_name) = &@field(list.arrays, field_name)[index];
 
             return ptr;
         }
@@ -122,10 +67,10 @@ pub fn StaticMultiArrayList(comptime Struct: type) type {
         pub const Field = std.meta.FieldEnum(Struct);
 
         pub fn items(
-            list: *const List,
+            list: *List,
             comptime field: Field,
         ) []@FieldType(Struct, @tagName(field)) {
-            return @field(list.offsets, @tagName(field))[0..list.count];
+            return @field(list.arrays, @tagName(field))[0..list.count];
         }
     };
 }

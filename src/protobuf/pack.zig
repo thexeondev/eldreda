@@ -35,7 +35,7 @@ pub const AvatarInfoList = StaticMultiArrayList(struct {
     avatar_info: gen.AvatarInfo,
     dressed_equip_buffer: [Player.Avatar.equipment_count]gen.DressedEquip,
     mindscape_tab_state: [Player.Avatar.Mindscape.unlocked_max]bool,
-});
+}, Player.Avatar.count_max);
 
 pub fn avatarInfo(out: AvatarInfoList.Ptr, avatar: Player.Avatar) void {
     var dressed_equip: std.ArrayList(gen.DressedEquip) = .initBuffer(out.dressed_equip_buffer);
@@ -84,7 +84,7 @@ pub const EquipInfoList = StaticMultiArrayList(struct {
     equip_info: gen.EquipInfo,
     main_property: gen.EquipProperty,
     sub_properties_buffer: [Player.Equipment.Property.sub_count]gen.EquipProperty,
-});
+}, Player.Equipment.count_max);
 
 pub fn equipInfo(out: EquipInfoList.Ptr, equipment: Player.Equipment) void {
     out.main_property.* = .{

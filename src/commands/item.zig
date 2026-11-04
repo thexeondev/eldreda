@@ -25,9 +25,7 @@ pub fn GetWeaponDataCsReq(session: *Session) !void {
 }
 
 pub fn GetEquipDataCsReq(session: *Session) !void {
-    const buffer_size = protobuf.pack.EquipInfoList.bufferSizeFor(Player.Equipment.count_max);
-    var buffer: [buffer_size]u8 align(protobuf.pack.EquipInfoList.alignment) = undefined;
-    var equip_list: protobuf.pack.EquipInfoList = .init(&buffer);
+    var equip_list: protobuf.pack.EquipInfoList = .empty;
 
     for (
         session.player.equipment.uids(),
