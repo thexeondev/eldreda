@@ -564,7 +564,7 @@ pub fn init(arena: Allocator, name_map: *const NameMap, player: *Storage) Alloca
 
     var weapons: std.ArrayList(Weapon) = try .initCapacity(arena, player.weapons.count);
     for (player.weapons.uids(), player.weapons.bits()) |weapon_uid, bits| {
-        if (player.avatars.getByWeaponUid(weapon_uid) != null)
+        if (player.avatars.getIndexByWeaponUid(weapon_uid) != null)
             continue;
 
         weapons.appendAssumeCapacity(.init(.{
@@ -575,7 +575,7 @@ pub fn init(arena: Allocator, name_map: *const NameMap, player: *Storage) Alloca
 
     var equipment: std.ArrayList(Equipment) = try .initCapacity(arena, player.equipment.count);
     for (player.equipment.uids(), player.equipment.bits()) |equipment_uid, bits| {
-        if (player.avatars.getByEquipmentUid(equipment_uid) != null)
+        if (player.avatars.getIndexByEquipmentUid(equipment_uid) != null)
             continue;
 
         equipment.appendAssumeCapacity(.init(.{

@@ -2,7 +2,6 @@ const Session = @This();
 
 const std = @import("std");
 const Io = std.Io;
-const assert = std.debug.assert;
 
 const yuzuha = @import("yuzuha.zig");
 const Command = yuzuha.Command;
@@ -16,10 +15,14 @@ sink: Sink,
 
 pub const Error = protobuf.DecodeError || Command.EncodeError;
 
-/// Each handler should call this function in one exact place.
+/// Deprecated.
 pub fn playerModified(session: *Session) void {
-    assert(!session.player.needs_save); // see doc comment for `playerModified`
     session.player.needs_save = true;
+}
+
+pub fn notify(session: *Session) Command.EncodeError!void {
+    if (session.player.buildPlayerSyncScNotify()) |sync|
+        try session.sink.notify(protobuf.gen.PlayerSyncScNotify, &sync);
 }
 
 pub const Sink = struct {

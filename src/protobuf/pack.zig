@@ -37,35 +37,34 @@ pub const AvatarInfoList = BoundedMultiArray(struct {
     mindscape_tab_state: [Player.Storage.Avatar.Mindscape.unlocked_max]bool,
 }, Player.Storage.Avatar.count_max);
 
-pub fn avatarInfo(out: AvatarInfoList.Ptr, avatar: Player.Storage.Avatar) void {
-    var dressed_equip: std.ArrayList(gen.DressedEquip) = .initBuffer(out.dressed_equip_buffer);
+pub fn avatarInfo(out: AvatarInfoList.Ptr, avatar: Player.Avatar) void {
+    var dressed_equip_list: std.ArrayList(gen.DressedEquip) = .initBuffer(out.dressed_equip_buffer);
+    for (std.enums.values(Player.Equipment.Type)) |equipment_type| {
+        const uid = avatar.dressed_equipment.get(equipment_type) orelse continue;
 
-    for (avatar.dressed_equipment, 1..) |equipment_uid_maybe, slot_index| {
-        const equipment_uid = equipment_uid_maybe.unwrap() orelse continue;
-
-        dressed_equip.appendAssumeCapacity(.{
-            .index = @intCast(slot_index),
-            .equip_uid = @backingInt(equipment_uid),
+        dressed_equip_list.appendAssumeCapacity(.{
+            .index = @backingInt(equipment_type),
+            .equip_uid = uid,
         });
     }
 
-    out.mindscape_tab_state.* = avatar.bits.mindscape.tab.toSwitches();
+    out.mindscape_tab_state.* = avatar.mindscape_tab.switches;
 
     out.avatar_info.* = .{
-        .id = @backingInt(avatar.id),
-        .level = avatar.bits.level_up.getLevel(),
-        .rank = avatar.bits.level_up.getRank(),
-        .is_favorite = avatar.bits.flags.favorite,
-        .cur_weapon_uid = @backingInt(avatar.weapon_uid_maybe),
-        .unlocked_talent_num = avatar.bits.mindscape.unlocked,
+        .id = avatar.id,
+        .level = avatar.level,
+        .rank = avatar.rank,
+        .is_favorite = avatar.favorite,
+        .cur_weapon_uid = avatar.weapon_uid_maybe orelse 0,
+        .unlocked_talent_num = avatar.unlocked_talent_num,
         .mindscape_tab_state = out.mindscape_tab_state,
         .skill_type_level = &skills,
         .passive_skill_level = 6,
-        .dressed_equip_list = dressed_equip.items,
-        .show_weapon_type = switch (avatar.bits.show_weapon_status) {
+        .dressed_equip_list = dressed_equip_list.items,
+        .show_weapon_type = switch (avatar.weapon_show) {
             .locked => .LOCKED,
-            .unlocked_enabled => .SHOW,
-            .unlocked_disabled => .HIDE,
+            .unlocked_show => .SHOW,
+            .unlocked_hidden => .HIDE,
         },
     };
 }

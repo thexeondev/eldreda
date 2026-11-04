@@ -129,6 +129,7 @@ pub const Avatar = struct {
             return null;
         }
 
+        /// Deprecated.
         pub fn at(list: *List, index: u32) Avatar {
             return .{
                 .id = list.ids()[index],
@@ -138,6 +139,7 @@ pub const Avatar = struct {
             };
         }
 
+        /// Deprecated.
         pub fn get(list: *List, id_int: u32) ?struct { u32, Avatar } {
             const id = Id.fromInt(id_int) orelse return null;
             const index = list.getIndexById(id) orelse return null;
@@ -145,33 +147,9 @@ pub const Avatar = struct {
             return .{ index, list.at(index) };
         }
 
-        pub fn getByWeaponUid(list: *List, weapon_uid: Weapon.Uid) ?struct { u32, Avatar } {
-            const index = list.getIndexByWeaponUid(weapon_uid) orelse return null;
-            return .{ index, list.at(index) };
-        }
-
-        pub fn getByEquipmentUid(list: *List, equipment_uid: Equipment.Uid) ?struct {
-            equipment_slot_index: u32,
-            avatar_index: u32,
-            avatar: Avatar,
-        } {
-            const result = list.getIndexByEquipmentUid(equipment_uid) orelse return null;
-
-            return .{
-                .equipment_slot_index = result.equipment_slot_index,
-                .avatar_index = result.avatar_index,
-                .avatar = list.at(result.avatar_index),
-            };
-        }
-
-        pub fn replaceAt(list: *List, index: u32, avatar: Avatar) void {
-            assert(list.count > index);
-            assert(list.ids()[index] == avatar.id); // avatar id is immutable
-
-            list.bits()[index] = avatar.bits;
-            list.weaponUids()[index] = avatar.weapon_uid_maybe;
-            list.dressedEquipment()[index] = avatar.dressed_equipment;
-        }
+        pub const getByWeaponUid = @compileError("Use `Player.getAvatarWithWeaponUid` instead");
+        pub const getByEquipmentUid = @compileError("Use `Player.getAvatarWithEquipmentUid` instead");
+        pub const replaceAt = @compileError("Use `Player.updateAvatar` instead");
 
         pub const GetOrAddResult = struct {
             found_existing: bool,
@@ -425,6 +403,11 @@ pub const Weapon = struct {
     pub const Uid = enum(u32) {
         _,
 
+        pub fn fromInt(uid_int: u32) Uid {
+            assert(uid_int != 0);
+            return @fromBackingInt(uid_int);
+        }
+
         pub const Optional = enum(u32) {
             none = 0,
             _,
@@ -558,6 +541,11 @@ pub const Equipment = struct {
     pub const Uid = enum(u32) {
         _,
 
+        pub fn fromInt(uid_int: u32) Uid {
+            assert(uid_int != 0);
+            return @fromBackingInt(uid_int);
+        }
+
         pub const Optional = enum(u32) {
             none = 0,
             _,
@@ -570,6 +558,13 @@ pub const Equipment = struct {
                 return switch (uid_maybe) {
                     .none => null,
                     else => |uid| @fromBackingInt(@backingInt(uid)),
+                };
+            }
+
+            pub fn unwrapInt(uid_maybe: Optional) ?u32 {
+                return switch (uid_maybe) {
+                    .none => null,
+                    else => |uid| @backingInt(uid),
                 };
             }
         };

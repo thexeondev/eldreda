@@ -151,6 +151,7 @@ fn serveConnection(
             .command = command,
             .player = .{
                 .storage = &player_storage,
+                .sync = .init,
                 .needs_save = false,
             },
             .time = .now(io, .real),

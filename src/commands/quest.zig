@@ -45,23 +45,10 @@ pub fn StartTrainingQuestCsReq(session: *Session) !void {
             .{ .retcode = .RET_AVATAR_PARAM_ERROR },
         );
 
-    var avatar_list: protobuf.pack.AvatarInfoList = .empty;
-    for (
-        session.player.storage.avatars.ids(),
-        session.player.storage.avatars.bits(),
-        session.player.storage.avatars.weaponUids(),
-        session.player.storage.avatars.dressedEquipment(),
-    ) |id, bits, weapon_uid_maybe, dressed_equipment| {
-        protobuf.pack.avatarInfo(
-            avatar_list.addOne(),
-            .{
-                .id = id,
-                .bits = bits,
-                .weapon_uid_maybe = weapon_uid_maybe,
-                .dressed_equipment = dressed_equipment,
-            },
-        );
-    }
+    var avatar_info_list: protobuf.pack.AvatarInfoList = .empty;
+    var avatars = session.player.avatars();
+    while (avatars.next()) |avatar|
+        protobuf.pack.avatarInfo(avatar_info_list.addOne(), avatar);
 
     try session.sink.notify(protobuf.gen.EnterSceneScNotify, &.{
         .scene = .{
@@ -72,7 +59,7 @@ pub fn StartTrainingQuestCsReq(session: *Session) !void {
         },
         .dungeon = .{
             .quest_id = request.quest_id,
-            .dungeon_package_info = .{ .avatar_list = avatar_list.items(.avatar_info) },
+            .dungeon_package_info = .{ .avatar_list = avatar_info_list.items(.avatar_info) },
         },
     });
 
