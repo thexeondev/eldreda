@@ -10,8 +10,8 @@ pub fn GetWeaponDataCsReq(session: *Session) !void {
     var weapon_list: std.ArrayList(protobuf.gen.WeaponInfo) = .initBuffer(&weapon_buffer);
 
     for (
-        session.player.weapons.uids(),
-        session.player.weapons.bits(),
+        session.player.storage.weapons.uids(),
+        session.player.storage.weapons.bits(),
     ) |uid, bits| {
         protobuf.pack.weaponInfo(
             weapon_list.addOneAssumeCapacity(),
@@ -28,8 +28,8 @@ pub fn GetEquipDataCsReq(session: *Session) !void {
     var equip_list: protobuf.pack.EquipInfoList = .empty;
 
     for (
-        session.player.equipment.uids(),
-        session.player.equipment.bits(),
+        session.player.storage.equipment.uids(),
+        session.player.storage.equipment.bits(),
     ) |uid, bits| {
         protobuf.pack.equipInfo(
             equip_list.addOne(),

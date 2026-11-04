@@ -10,10 +10,10 @@ pub fn GetAvatarDataCsReq(session: *Session) !void {
     var avatar_list: protobuf.pack.AvatarInfoList = .empty;
 
     for (
-        session.player.avatars.ids(),
-        session.player.avatars.bits(),
-        session.player.avatars.weaponUids(),
-        session.player.avatars.dressedEquipment(),
+        session.player.storage.avatars.ids(),
+        session.player.storage.avatars.bits(),
+        session.player.storage.avatars.weaponUids(),
+        session.player.storage.avatars.dressedEquipment(),
     ) |id, bits, weapon_uid_maybe, dressed_equipment| {
         protobuf.pack.avatarInfo(
             avatar_list.addOne(),
@@ -33,7 +33,7 @@ pub fn GetAvatarDataCsReq(session: *Session) !void {
 
 pub fn AvatarFavoriteCsReq(session: *Session) !void {
     const request = try session.command.decodeBody(protobuf.gen.AvatarFavoriteCsReq.Decoded);
-    const index, var avatar = session.player.avatars.get(request.avatar_id) orelse
+    const index, var avatar = session.player.storage.avatars.get(request.avatar_id) orelse
         return session.sink.respondMinimal(
             .AvatarFavoriteScRsp,
             .{ .retcode = .RET_AVATAR_PARAM_ERROR },
@@ -43,7 +43,7 @@ pub fn AvatarFavoriteCsReq(session: *Session) !void {
         avatar.bits.flags.favorite = true;
 
         session.playerModified();
-        session.player.avatars.replaceAt(index, avatar);
+        session.player.storage.avatars.replaceAt(index, avatar);
 
         var avatar_list: protobuf.pack.AvatarInfoList = .empty;
         protobuf.pack.avatarInfo(avatar_list.addOne(), avatar);
@@ -60,23 +60,23 @@ pub fn WeaponDressCsReq(session: *Session) !void {
     const request = try session.command.decodeBody(protobuf.gen.WeaponDressCsReq.Decoded);
     const weapon_uid: Player.Storage.Weapon.Uid = @fromBackingInt(request.weapon_uid);
 
-    const weapon_index = session.player.weapons.getIndexByUid(weapon_uid) orelse
+    const weapon_index = session.player.storage.weapons.getIndexByUid(weapon_uid) orelse
         return session.sink.respondMinimal(.WeaponDressScRsp, .{ .retcode = .RET_ITEM_NOT_FOUND });
 
-    const weapon_id = session.player.weapons.bits()[weapon_index].id;
+    const weapon_id = session.player.storage.weapons.bits()[weapon_index].id;
 
     const avatar_to_dress_index, var avatar_to_dress =
-        session.player.avatars.get(request.avatar_id) orelse
+        session.player.storage.avatars.get(request.avatar_id) orelse
         return session.sink.respondMinimal(.WeaponDressScRsp, .{ .retcode = .RET_AVATAR_PARAM_ERROR });
 
     session.playerModified();
 
     var avatar_sync: protobuf.pack.AvatarInfoList = .empty;
 
-    if (session.player.avatars.getByWeaponUid(weapon_uid)) |previous_owner| {
+    if (session.player.storage.avatars.getByWeaponUid(weapon_uid)) |previous_owner| {
         const avatar_to_undress_index, var avatar_to_undress = previous_owner;
         avatar_to_undress.weapon_uid_maybe = .none;
-        session.player.avatars.replaceAt(avatar_to_undress_index, avatar_to_undress);
+        session.player.storage.avatars.replaceAt(avatar_to_undress_index, avatar_to_undress);
 
         protobuf.pack.avatarInfo(
             avatar_sync.addOne(),
@@ -97,7 +97,7 @@ pub fn WeaponDressCsReq(session: *Session) !void {
         .unlocked_disabled, .unlocked_enabled => {},
     }
 
-    session.player.avatars.replaceAt(avatar_to_dress_index, avatar_to_dress);
+    session.player.storage.avatars.replaceAt(avatar_to_dress_index, avatar_to_dress);
 
     protobuf.pack.avatarInfo(
         avatar_sync.addOne(),
@@ -115,13 +115,13 @@ pub fn WeaponUnDressCsReq(session: *Session) !void {
     const request = try session.command.decodeBody(protobuf.gen.WeaponUnDressCsReq.Decoded);
 
     const avatar_to_undress_index, var avatar_to_undress =
-        session.player.avatars.get(request.avatar_id) orelse
+        session.player.storage.avatars.get(request.avatar_id) orelse
         return session.sink.respondMinimal(.WeaponUnDressScRsp, .{ .retcode = .RET_AVATAR_NO_WEAPON });
 
     session.playerModified();
 
     avatar_to_undress.weapon_uid_maybe = .none;
-    session.player.avatars.replaceAt(avatar_to_undress_index, avatar_to_undress);
+    session.player.storage.avatars.replaceAt(avatar_to_undress_index, avatar_to_undress);
 
     var avatar_list: protobuf.pack.AvatarInfoList = .empty;
 
@@ -146,16 +146,16 @@ pub fn EquipmentDressCsReq(session: *Session) !void {
 
     const dress_index = request.dress_index - 1;
 
-    if (session.player.equipment.getIndexByUid(equipment_uid) == null)
+    if (session.player.storage.equipment.getIndexByUid(equipment_uid) == null)
         return session.sink.respondMinimal(.EquipmentDressScRsp, .{ .retcode = .RET_ITEM_NOT_FOUND });
 
     const avatar_to_dress_index, var avatar_to_dress =
-        session.player.avatars.get(request.avatar_id) orelse
+        session.player.storage.avatars.get(request.avatar_id) orelse
         return session.sink.respondMinimal(.EquipmentDressScRsp, .{ .retcode = .RET_AVATAR_PARAM_ERROR });
 
     var avatar_sync: protobuf.pack.AvatarInfoList = .empty;
 
-    if (session.player.avatars.getByEquipmentUid(equipment_uid)) |previous_owner| {
+    if (session.player.storage.avatars.getByEquipmentUid(equipment_uid)) |previous_owner| {
         if (previous_owner.avatar_index == avatar_to_dress_index)
             return session.sink.respondMinimal(
                 .EquipmentDressScRsp,
@@ -164,7 +164,7 @@ pub fn EquipmentDressCsReq(session: *Session) !void {
 
         var avatar_to_undress = previous_owner.avatar;
         avatar_to_undress.dressed_equipment[previous_owner.equipment_slot_index] = .none;
-        session.player.avatars.replaceAt(previous_owner.avatar_index, avatar_to_undress);
+        session.player.storage.avatars.replaceAt(previous_owner.avatar_index, avatar_to_undress);
 
         protobuf.pack.avatarInfo(avatar_sync.addOne(), avatar_to_undress);
     }
@@ -172,7 +172,7 @@ pub fn EquipmentDressCsReq(session: *Session) !void {
     session.playerModified();
 
     avatar_to_dress.dressed_equipment[dress_index] = .wrap(equipment_uid);
-    session.player.avatars.replaceAt(avatar_to_dress_index, avatar_to_dress);
+    session.player.storage.avatars.replaceAt(avatar_to_dress_index, avatar_to_dress);
     protobuf.pack.avatarInfo(avatar_sync.addOne(), avatar_to_dress);
 
     try session.sink.notify(protobuf.gen.PlayerSyncScNotify, &.{
@@ -186,7 +186,7 @@ pub fn EquipmentUnDressCsReq(session: *Session) !void {
     var request = try session.command.decodeBody(protobuf.gen.EquipmentUnDressCsReq.Decoded);
 
     const avatar_to_undress_index, var avatar_to_undress =
-        session.player.avatars.get(request.avatar_id) orelse
+        session.player.storage.avatars.get(request.avatar_id) orelse
         return session.sink.respondMinimal(
             .EquipmentUnDressScRsp,
             .{ .retcode = .RET_AVATAR_PARAM_ERROR },
@@ -220,7 +220,7 @@ pub fn EquipmentUnDressCsReq(session: *Session) !void {
     }
 
     if (undressed_count != 0) {
-        session.player.avatars.replaceAt(avatar_to_undress_index, avatar_to_undress);
+        session.player.storage.avatars.replaceAt(avatar_to_undress_index, avatar_to_undress);
         session.playerModified();
 
         var avatar_list: protobuf.pack.AvatarInfoList = .empty;
@@ -238,7 +238,7 @@ pub fn EquipmentSuitDressCsReq(session: *Session) !void {
     var request = try session.command.decodeBody(protobuf.gen.EquipmentSuitDressCsReq.Decoded);
 
     const avatar_to_dress_index, var avatar_to_dress =
-        session.player.avatars.get(request.avatar_id) orelse
+        session.player.storage.avatars.get(request.avatar_id) orelse
         return session.sink.respondMinimal(
             .EquipmentSuitDressScRsp,
             .{ .retcode = .RET_AVATAR_PARAM_ERROR },
@@ -262,13 +262,13 @@ pub fn EquipmentSuitDressCsReq(session: *Session) !void {
         const dress_index = dress_param.dress_index - 1;
 
         const equipment_uid: Player.Storage.Equipment.Uid = @fromBackingInt(dress_param.equip_uid);
-        if (session.player.equipment.getIndexByUid(equipment_uid) == null)
+        if (session.player.storage.equipment.getIndexByUid(equipment_uid) == null)
             return session.sink.respondMinimal(
                 .EquipmentSuitDressScRsp,
                 .{ .retcode = .RET_ITEM_NOT_FOUND },
             );
 
-        if (session.player.avatars.getIndexByEquipmentUid(equipment_uid) != null)
+        if (session.player.storage.avatars.getIndexByEquipmentUid(equipment_uid) != null)
             return session.sink.respondMinimal(
                 .EquipmentSuitDressScRsp,
                 .{ .retcode = .RET_AVATAR_OCCUPIED },
@@ -278,7 +278,7 @@ pub fn EquipmentSuitDressCsReq(session: *Session) !void {
     }
 
     if (dressed_count != 0) {
-        session.player.avatars.replaceAt(avatar_to_dress_index, avatar_to_dress);
+        session.player.storage.avatars.replaceAt(avatar_to_dress_index, avatar_to_dress);
         session.playerModified();
 
         var avatar_list: protobuf.pack.AvatarInfoList = .empty;

@@ -9,19 +9,17 @@ const Command = yuzuha.Command;
 const protobuf = yuzuha.protobuf;
 const Player = yuzuha.Player;
 
-time: Io.Timestamp,
 command: Command,
+player: Player,
+time: Io.Timestamp,
 sink: Sink,
-player_uid: u32,
-player: *Player.Storage,
-player_needs_save: bool,
 
 pub const Error = protobuf.DecodeError || Command.EncodeError;
 
 /// Each handler should call this function in one exact place.
 pub fn playerModified(session: *Session) void {
-    assert(!session.player_needs_save); // see doc comment for `playerModified`
-    session.player_needs_save = true;
+    assert(!session.player.needs_save); // see doc comment for `playerModified`
+    session.player.needs_save = true;
 }
 
 pub const Sink = struct {

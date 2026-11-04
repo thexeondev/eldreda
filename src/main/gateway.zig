@@ -148,22 +148,23 @@ fn serveConnection(
         Command.xor(command.body, &client.decrypt_vector);
 
         var session: Session = .{
-            .time = .now(io, .real),
             .command = command,
+            .player = .{
+                .storage = &player_storage,
+                .needs_save = false,
+            },
+            .time = .now(io, .real),
             .sink = .{
                 .buffer = &send_buffer,
                 .decrypt_vector = &client.decrypt_vector,
                 .packet_id_counter = &client.packet_id_counter,
                 .ack_packet_id = head.packet_id,
             },
-            .player_uid = client.player_uid,
-            .player = &player_storage,
-            .player_needs_save = false,
         };
 
         try yuzuha.commands.execute(&session);
 
-        if (session.player_needs_save) {
+        if (session.player.needs_save) {
             try player_storage.saveToFile(io, server.storage.player_dir, player_storage_file_path);
         }
 

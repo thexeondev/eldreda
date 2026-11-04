@@ -23,7 +23,7 @@ pub fn GetMiscDataCsReq(session: *Session) !void {
             },
             .business_card = .{},
             .player_accessory = .{
-                .control_guise_avatar_id = @backingInt(session.player.role.control_guise_avatar),
+                .control_guise_avatar_id = @backingInt(session.player.storage.role.control_guise_avatar),
             },
         },
     });

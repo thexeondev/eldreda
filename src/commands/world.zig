@@ -8,9 +8,9 @@ const protobuf = yuzuha.protobuf;
 pub fn EnterWorldCsReq(session: *Session) !void {
     try session.sink.notify(protobuf.gen.EnterSceneScNotify, &.{
         .scene = protobuf.pack.sceneDataForHall(.{
-            .main_city = &session.player.main_city,
-            .role = &session.player.role,
-            .time = &session.player.time,
+            .main_city = &session.player.storage.main_city,
+            .role = &session.player.storage.role,
+            .time = &session.player.storage.time,
         }),
     });
 
@@ -24,9 +24,9 @@ pub fn EnterSectionCompleteCsReq(session: *Session) !void {
 pub fn LeaveCurSceneCsReq(session: *Session) !void {
     try session.sink.notify(protobuf.gen.EnterSceneScNotify, &.{
         .scene = protobuf.pack.sceneDataForHall(.{
-            .main_city = &session.player.main_city,
-            .role = &session.player.role,
-            .time = &session.player.time,
+            .main_city = &session.player.storage.main_city,
+            .role = &session.player.storage.role,
+            .time = &session.player.storage.time,
         }),
     });
 
@@ -39,13 +39,13 @@ pub fn EnterSectionCsReq(session: *Session) !void {
         return session.sink.respondMinimal(.EnterSectionScRsp, .{ .retcode = .RET_SCENE_NOT_FOUND });
 
     session.playerModified();
-    session.player.main_city.section = section;
+    session.player.storage.main_city.section = section;
 
     try session.sink.notify(protobuf.gen.EnterSceneScNotify, &.{
         .scene = protobuf.pack.sceneDataForHall(.{
-            .main_city = &session.player.main_city,
-            .role = &session.player.role,
-            .time = &session.player.time,
+            .main_city = &session.player.storage.main_city,
+            .role = &session.player.storage.role,
+            .time = &session.player.storage.time,
         }),
     });
 
@@ -75,18 +75,18 @@ pub fn ModMainCityTimeCsReq(session: *Session) !void {
     if (next_time_period_maybe) |next_time_period| {
         session.playerModified();
 
-        const time_period_change = session.player.time.period.fastForwardTo(next_time_period);
+        const time_period_change = session.player.storage.time.period.fastForwardTo(next_time_period);
 
         if (time_period_change.day_advanced)
-            session.player.time.day = session.player.time.day.increment();
+            session.player.storage.time.day = session.player.storage.time.day.increment();
 
-        session.player.time.period = time_period_change.new_value;
+        session.player.storage.time.period = time_period_change.new_value;
     }
 
     var refresh_notify = protobuf.pack.hall(protobuf.gen.HallRefreshScNotify, .{
-        .main_city = &session.player.main_city,
-        .role = &session.player.role,
-        .time = &session.player.time,
+        .main_city = &session.player.storage.main_city,
+        .role = &session.player.storage.role,
+        .time = &session.player.storage.time,
     });
     refresh_notify.force_refresh = true;
     try session.sink.notify(protobuf.gen.HallRefreshScNotify, &refresh_notify);

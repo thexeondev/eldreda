@@ -9,7 +9,7 @@ pub fn PlayerLoginCsReq(session: *Session) !void {
 
 pub fn GetSelfBasicInfoCsReq(session: *Session) !void {
     try session.sink.respond(protobuf.gen.GetSelfBasicInfoScRsp, &.{
-        .self_basic_info = protobuf.pack.selfBasicInfo(&session.player.role),
+        .self_basic_info = protobuf.pack.selfBasicInfo(&session.player.storage.role),
     });
 }
 
@@ -32,7 +32,7 @@ pub fn ModAvatarCsReq(session: *Session) !void {
         return session.sink.respondMinimal(.ModAvatarScRsp, .{ .retcode = .RET_AVATAR_PARAM_ERROR });
 
     if (control_guise_avatar.toAvatarId()) |avatar_id| {
-        if (session.player.avatars.getIndexById(avatar_id) == null)
+        if (session.player.storage.avatars.getIndexById(avatar_id) == null)
             return session.sink.respondMinimal(
                 .ModAvatarScRsp,
                 .{ .retcode = .RET_AVATAR_PARAM_ERROR },
@@ -40,11 +40,11 @@ pub fn ModAvatarCsReq(session: *Session) !void {
     }
 
     session.playerModified();
-    session.player.role.control_avatar = control_avatar;
-    session.player.role.control_guise_avatar = control_guise_avatar;
+    session.player.storage.role.control_avatar = control_avatar;
+    session.player.storage.role.control_guise_avatar = control_guise_avatar;
 
     try session.sink.notify(protobuf.gen.PlayerSyncScNotify, &.{
-        .self_basic_info = protobuf.pack.selfBasicInfo(&session.player.role),
+        .self_basic_info = protobuf.pack.selfBasicInfo(&session.player.storage.role),
     });
 
     return session.sink.respondMinimal(.ModAvatarScRsp, .{ .retcode = .RET_SUCC });

@@ -47,10 +47,10 @@ pub fn StartTrainingQuestCsReq(session: *Session) !void {
 
     var avatar_list: protobuf.pack.AvatarInfoList = .empty;
     for (
-        session.player.avatars.ids(),
-        session.player.avatars.bits(),
-        session.player.avatars.weaponUids(),
-        session.player.avatars.dressedEquipment(),
+        session.player.storage.avatars.ids(),
+        session.player.storage.avatars.bits(),
+        session.player.storage.avatars.weaponUids(),
+        session.player.storage.avatars.dressedEquipment(),
     ) |id, bits, weapon_uid_maybe, dressed_equipment| {
         protobuf.pack.avatarInfo(
             avatar_list.addOne(),
