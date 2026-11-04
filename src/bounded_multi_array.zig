@@ -1,11 +1,11 @@
 const std = @import("std");
 const assert = std.debug.assert;
 
-pub fn BoundedMultiArray(comptime Struct: type, comptime capacity: usize) type {
+pub fn BoundedMultiArray(comptime Struct: type, comptime capacity: u32) type {
     const struct_info = @typeInfo(Struct).@"struct";
 
     return struct {
-        count: usize,
+        count: u32,
         arrays: Arrays,
 
         const List = @This();

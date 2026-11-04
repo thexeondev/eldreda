@@ -89,33 +89,31 @@ pub const Equipment = struct {
 };
 
 fn avatarAtIndex(player: *const Player, index: u32) Avatar {
-    const id = player.storage.avatars.ids()[index];
-    const bits = player.storage.avatars.bits()[index];
-    const dressed_equipment = player.storage.avatars.dressedEquipment()[index];
+    const storage_avatar = player.storage.avatars.getPtr(index);
 
     return .{
-        .id = @backingInt(id),
-        .level = bits.level_up.getLevel(),
-        .rank = bits.level_up.getRank(),
-        .unlocked_talent_num = bits.mindscape.unlocked,
-        .mindscape_tab = .{ .switches = bits.mindscape.tab.toSwitches() },
-        .favorite = bits.flags.favorite,
-        .weapon_show = switch (bits.show_weapon_status) {
+        .id = @backingInt(storage_avatar.id.*),
+        .level = storage_avatar.bits.level_up.getLevel(),
+        .rank = storage_avatar.bits.level_up.getRank(),
+        .unlocked_talent_num = storage_avatar.bits.mindscape.unlocked,
+        .mindscape_tab = .{ .switches = storage_avatar.bits.mindscape.tab.toSwitches() },
+        .favorite = storage_avatar.bits.flags.favorite,
+        .weapon_show = switch (storage_avatar.bits.show_weapon_status) {
             .locked => .locked,
             .unlocked_disabled => .unlocked_show,
             .unlocked_enabled => .unlocked_hidden,
         },
-        .weapon_uid_maybe = if (player.storage.avatars.weaponUids()[index].unwrap()) |uid|
+        .weapon_uid_maybe = if (storage_avatar.weapon_uid_maybe.unwrap()) |uid|
             @backingInt(uid)
         else
             null,
         .dressed_equipment = .init(.{
-            .@"1" = dressed_equipment[0].unwrapInt(),
-            .@"2" = dressed_equipment[1].unwrapInt(),
-            .@"3" = dressed_equipment[2].unwrapInt(),
-            .@"4" = dressed_equipment[3].unwrapInt(),
-            .@"5" = dressed_equipment[4].unwrapInt(),
-            .@"6" = dressed_equipment[5].unwrapInt(),
+            .@"1" = storage_avatar.dressed_equipment[0].unwrapInt(),
+            .@"2" = storage_avatar.dressed_equipment[1].unwrapInt(),
+            .@"3" = storage_avatar.dressed_equipment[2].unwrapInt(),
+            .@"4" = storage_avatar.dressed_equipment[3].unwrapInt(),
+            .@"5" = storage_avatar.dressed_equipment[4].unwrapInt(),
+            .@"6" = storage_avatar.dressed_equipment[5].unwrapInt(),
         }),
     };
 }
@@ -126,13 +124,13 @@ pub fn avatars(player: *const Player) Avatar.Iterator {
 
 pub fn getAvatarById(player: *const Player, id_int: u32) ?Avatar {
     const id = Storage.Avatar.Id.fromInt(id_int) orelse return null;
-    const index = player.storage.avatars.getIndexById(id) orelse return null;
+    const index = player.storage.getAvatarIndexById(id) orelse return null;
     return player.avatarAtIndex(index);
 }
 
 pub fn getAvatarWithWeaponUid(player: *const Player, uid_int: u32) ?Avatar {
     const uid: Storage.Weapon.Uid = .fromInt(uid_int);
-    const index = player.storage.avatars.getIndexByWeaponUid(uid) orelse return null;
+    const index = player.storage.getAvatarIndexByWeaponUid(uid) orelse return null;
     return player.avatarAtIndex(index);
 }
 
@@ -143,7 +141,7 @@ pub const AvatarWithEquipment = struct {
 
 pub fn getAvatarWithEquipmentUid(player: *const Player, uid_int: u32) ?AvatarWithEquipment {
     const uid: Storage.Equipment.Uid = .fromInt(uid_int);
-    const result = player.storage.avatars.getIndexByEquipmentUid(uid) orelse return null;
+    const result = player.storage.getAvatarIndexByEquipmentUid(uid) orelse return null;
 
     return .{
         .equipment_type = @fromBackingInt(@intCast(result.equipment_slot_index + 1)),
@@ -152,7 +150,7 @@ pub fn getAvatarWithEquipmentUid(player: *const Player, uid_int: u32) ?AvatarWit
 }
 
 pub fn updateAvatar(player: *Player, avatar: Avatar) void {
-    const avatar_index = player.storage.avatars.getIndexById(@fromBackingInt(avatar.id)).?;
+    const avatar_index = player.storage.getAvatarIndexById(@fromBackingInt(avatar.id)).?;
     player.updateAvatarAtIndex(avatar_index, avatar);
     player.appendAvatarToSync(avatar);
 }
@@ -170,7 +168,8 @@ pub fn hasEquipmentWithUid(player: *Player, uid_int: u32) bool {
 fn updateAvatarAtIndex(player: *Player, avatar_index: u32, avatar: Avatar) void {
     player.needs_save = true;
 
-    player.storage.avatars.bits()[avatar_index] = .{
+    const storage_avatar = player.storage.avatars.getPtr(avatar_index);
+    storage_avatar.bits.* = .{
         .level_up = Storage.Avatar.LevelUp.fromRankAndLevel(avatar.rank, avatar.level).?,
         .flags = .{ .favorite = avatar.favorite },
         .mindscape = .{
@@ -184,10 +183,10 @@ fn updateAvatarAtIndex(player: *Player, avatar_index: u32, avatar: Avatar) void 
         },
     };
 
-    player.storage.avatars.weaponUids()[avatar_index] =
+    storage_avatar.weapon_uid_maybe.* =
         if (avatar.weapon_uid_maybe) |uid| .wrap(.fromInt(uid)) else .none;
 
-    const dressed_equipment_storage = &player.storage.avatars.dressedEquipment()[avatar_index];
+    const dressed_equipment_storage = storage_avatar.dressed_equipment;
     for (std.enums.values(Equipment.Type)) |equipment_type| {
         const equipment_index = @backingInt(equipment_type) - 1;
 

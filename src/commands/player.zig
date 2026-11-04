@@ -32,7 +32,7 @@ pub fn ModAvatarCsReq(session: *Session) !void {
         return session.sink.respondMinimal(.ModAvatarScRsp, .{ .retcode = .RET_AVATAR_PARAM_ERROR });
 
     if (control_guise_avatar.toAvatarId()) |avatar_id| {
-        if (session.player.storage.avatars.getIndexById(avatar_id) == null)
+        if (session.player.getAvatarById(@backingInt(avatar_id)) == null)
             return session.sink.respondMinimal(
                 .ModAvatarScRsp,
                 .{ .retcode = .RET_AVATAR_PARAM_ERROR },

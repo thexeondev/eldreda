@@ -1,6 +1,6 @@
 //! Player representation for the long-term on-disk storage.
 
-avatars: Avatar.List,
+avatars: BoundedMultiArray(Avatar, Avatar.count_max),
 weapons: Weapon.List,
 equipment: Equipment.List,
 // TODO: these 3 can be merged into a single struct so that they use a single buffer for save/load.
@@ -20,6 +20,7 @@ const hasUniqueRepresentation = std.meta.hasUniqueRepresentation;
 
 const yuzuha = @import("../yuzuha.zig");
 const templates = yuzuha.templates;
+const BoundedMultiArray = yuzuha.BoundedMultiArray;
 
 comptime {
     if (builtin.target.cpu.arch.endian() != .little)
@@ -60,121 +61,6 @@ pub const Avatar = struct {
 
         comptime {
             assert(hasUniqueRepresentation(@This()));
-        }
-    };
-
-    pub const List = struct {
-        count: u32,
-        bits_buffer: [count_max]Bits,
-        ids_buffer: [count_max]Id,
-        weapon_uids_buffer: [count_max]Weapon.Uid.Optional,
-        dressed_equipment_buffer: [count_max][equipment_count]Equipment.Uid.Optional,
-
-        pub const empty: List = .{
-            .count = 0,
-            .bits_buffer = undefined,
-            .ids_buffer = undefined,
-            .weapon_uids_buffer = undefined,
-            .dressed_equipment_buffer = undefined,
-        };
-
-        pub fn bits(list: *List) []Bits {
-            return list.bits_buffer[0..list.count];
-        }
-
-        pub fn ids(list: *List) []Id {
-            return list.ids_buffer[0..list.count];
-        }
-
-        pub fn weaponUids(list: *List) []Weapon.Uid.Optional {
-            return list.weapon_uids_buffer[0..list.count];
-        }
-
-        pub fn dressedEquipment(list: *List) [][equipment_count]Equipment.Uid.Optional {
-            return list.dressed_equipment_buffer[0..list.count];
-        }
-
-        pub fn getIndexById(list: *List, id: Id) ?u32 {
-            if (mem.findScalar(Id, list.ids(), id)) |index_usize|
-                return @intCast(index_usize);
-
-            return null;
-        }
-
-        pub fn getIndexByWeaponUid(list: *List, weapon_uid: Weapon.Uid) ?u32 {
-            if (mem.findScalar(Weapon.Uid.Optional, list.weaponUids(), .wrap(weapon_uid))) |index_usize|
-                return @intCast(index_usize);
-
-            return null;
-        }
-
-        pub fn getIndexByEquipmentUid(list: *List, equipment_uid: Equipment.Uid) ?struct {
-            avatar_index: u32,
-            equipment_slot_index: u32,
-        } {
-            if (mem.findScalar(
-                Equipment.Uid.Optional,
-                @ptrCast(list.dressedEquipment()),
-                .wrap(equipment_uid),
-            )) |equipment_index_usize| {
-                const avatar_index_usize = @divFloor(equipment_index_usize, equipment_count);
-                const equipment_slot_index_usize = equipment_index_usize % equipment_count;
-
-                return .{
-                    .avatar_index = @intCast(avatar_index_usize),
-                    .equipment_slot_index = @intCast(equipment_slot_index_usize),
-                };
-            }
-
-            return null;
-        }
-
-        /// Deprecated.
-        pub fn at(list: *List, index: u32) Avatar {
-            return .{
-                .id = list.ids()[index],
-                .bits = list.bits()[index],
-                .weapon_uid_maybe = list.weaponUids()[index],
-                .dressed_equipment = list.dressedEquipment()[index],
-            };
-        }
-
-        /// Deprecated.
-        pub fn get(list: *List, id_int: u32) ?struct { u32, Avatar } {
-            const id = Id.fromInt(id_int) orelse return null;
-            const index = list.getIndexById(id) orelse return null;
-
-            return .{ index, list.at(index) };
-        }
-
-        pub const getByWeaponUid = @compileError("Use `Player.getAvatarWithWeaponUid` instead");
-        pub const getByEquipmentUid = @compileError("Use `Player.getAvatarWithEquipmentUid` instead");
-        pub const replaceAt = @compileError("Use `Player.updateAvatar` instead");
-
-        pub const GetOrAddResult = struct {
-            found_existing: bool,
-            index: u32,
-        };
-
-        pub fn getOrAdd(
-            list: *List,
-            avatar: Avatar,
-        ) error{NoSpaceLeft}!GetOrAddResult {
-            if (list.getIndexById(avatar.id)) |index|
-                return .{ .found_existing = true, .index = index };
-
-            if (list.count == count_max) return error.NoSpaceLeft;
-            errdefer comptime unreachable;
-
-            defer list.count += 1;
-            const index = list.count;
-
-            list.ids_buffer[index] = avatar.id;
-            list.bits_buffer[index] = avatar.bits;
-            list.weapon_uids_buffer[index] = avatar.weapon_uid_maybe;
-            list.dressed_equipment_buffer[index] = avatar.dressed_equipment;
-
-            return .{ .found_existing = false, .index = index };
         }
     };
 
@@ -325,6 +211,64 @@ pub const Avatar = struct {
         };
     };
 };
+
+pub fn getOrAddAvatar(
+    storage: *Storage,
+    avatar: Avatar,
+) error{NoSpaceLeft}!struct {
+    found_existing: bool,
+    index: u32,
+} {
+    if (storage.getAvatarIndexById(avatar.id)) |index|
+        return .{ .found_existing = true, .index = index };
+
+    if (storage.avatars.count == Avatar.count_max) return error.NoSpaceLeft;
+    errdefer comptime unreachable;
+
+    storage.avatars.append(avatar);
+    const index = storage.avatars.count - 1;
+
+    return .{ .found_existing = false, .index = index };
+}
+
+pub fn getAvatarIndexById(storage: *Storage, id: Avatar.Id) ?u32 {
+    if (mem.findScalar(Avatar.Id, storage.avatars.items(.id), id)) |index_usize|
+        return @intCast(index_usize);
+
+    return null;
+}
+
+pub fn getAvatarIndexByWeaponUid(storage: *Storage, weapon_uid: Weapon.Uid) ?u32 {
+    if (mem.findScalar(
+        Weapon.Uid.Optional,
+        storage.avatars.items(.weapon_uid_maybe),
+        .wrap(weapon_uid),
+    )) |index_usize|
+        return @intCast(index_usize);
+
+    return null;
+}
+
+pub fn getAvatarIndexByEquipmentUid(storage: *Storage, equipment_uid: Equipment.Uid) ?struct {
+    avatar_index: u32,
+    equipment_slot_index: u32,
+} {
+    if (mem.findScalar(
+        Equipment.Uid.Optional,
+        @ptrCast(storage.avatars.items(.dressed_equipment)),
+        .wrap(equipment_uid),
+    )) |equipment_index_usize| {
+        const avatar_index_usize = @divFloor(equipment_index_usize, Avatar.equipment_count);
+        const equipment_slot_index_usize = equipment_index_usize % Avatar.equipment_count;
+
+        return .{
+            .avatar_index = @intCast(avatar_index_usize),
+            .equipment_slot_index = @intCast(equipment_slot_index_usize),
+        };
+    }
+
+    return null;
+}
 
 pub const Weapon = struct {
     uid_maybe: Uid.Optional,
@@ -802,7 +746,7 @@ pub fn initDefaults(storage: *Storage) void {
         var avatar_bits = avatar_bits_maxed_out;
         avatar_bits.flags.favorite = id_int == 1411;
 
-        const result = storage.avatars.getOrAdd(.{
+        const result = storage.getOrAddAvatar(.{
             .id = id,
             .bits = avatar_bits,
             .weapon_uid_maybe = .none,
@@ -972,10 +916,10 @@ pub fn saveToFile(storage: *Storage, io: Io, dir: Io.Dir, sub_path: []const u8) 
     };
 
     vecs.appendAssumeCapacity(@ptrCast(&header));
-    vecs.appendAssumeCapacity(@ptrCast(storage.avatars.bits()));
-    vecs.appendAssumeCapacity(@ptrCast(storage.avatars.ids()));
-    vecs.appendAssumeCapacity(@ptrCast(storage.avatars.weaponUids()));
-    vecs.appendAssumeCapacity(@ptrCast(storage.avatars.dressedEquipment()));
+    vecs.appendAssumeCapacity(@ptrCast(storage.avatars.items(.bits)));
+    vecs.appendAssumeCapacity(@ptrCast(storage.avatars.items(.id)));
+    vecs.appendAssumeCapacity(@ptrCast(storage.avatars.items(.weapon_uid_maybe)));
+    vecs.appendAssumeCapacity(@ptrCast(storage.avatars.items(.dressed_equipment)));
     vecs.appendAssumeCapacity(@ptrCast(storage.weapons.bits()));
     vecs.appendAssumeCapacity(@ptrCast(storage.weapons.uids()));
     vecs.appendAssumeCapacity(@ptrCast(storage.equipment.bits()));
@@ -1118,10 +1062,10 @@ pub fn loadFromFile(
     var vecs: std.ArrayList([]u8) = .initBuffer(&vecs_buffer);
 
     storage.avatars.count = header.avatar_count;
-    vecs.appendAssumeCapacity(@ptrCast(storage.avatars.bits()));
-    vecs.appendAssumeCapacity(@ptrCast(storage.avatars.ids()));
-    vecs.appendAssumeCapacity(@ptrCast(storage.avatars.weaponUids()));
-    vecs.appendAssumeCapacity(@ptrCast(storage.avatars.dressedEquipment()));
+    vecs.appendAssumeCapacity(@ptrCast(storage.avatars.items(.bits)));
+    vecs.appendAssumeCapacity(@ptrCast(storage.avatars.items(.id)));
+    vecs.appendAssumeCapacity(@ptrCast(storage.avatars.items(.weapon_uid_maybe)));
+    vecs.appendAssumeCapacity(@ptrCast(storage.avatars.items(.dressed_equipment)));
 
     storage.weapons.count = header.weapon_count;
     storage.weapons.uid_counter = header.weapon_uid_counter;

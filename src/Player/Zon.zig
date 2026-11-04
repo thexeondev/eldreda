@@ -516,10 +516,10 @@ pub fn init(arena: Allocator, name_map: *const NameMap, player: *Storage) Alloca
 
     for (
         avatars,
-        player.avatars.bits(),
-        player.avatars.ids(),
-        player.avatars.weaponUids(),
-        player.avatars.dressedEquipment(),
+        player.avatars.items(.bits),
+        player.avatars.items(.id),
+        player.avatars.items(.weapon_uid_maybe),
+        player.avatars.items(.dressed_equipment),
     ) |*avatar_zon, bits, id, weapon_uid_maybe, dressed_equipment| {
         const weapon_maybe: ?Weapon = if (weapon_uid_maybe.unwrap()) |weapon_uid| weapon: {
             const weapon_index = player.weapons.getIndexByUid(weapon_uid).?;
@@ -564,7 +564,7 @@ pub fn init(arena: Allocator, name_map: *const NameMap, player: *Storage) Alloca
 
     var weapons: std.ArrayList(Weapon) = try .initCapacity(arena, player.weapons.count);
     for (player.weapons.uids(), player.weapons.bits()) |weapon_uid, bits| {
-        if (player.avatars.getIndexByWeaponUid(weapon_uid) != null)
+        if (player.getAvatarIndexByWeaponUid(weapon_uid) != null)
             continue;
 
         weapons.appendAssumeCapacity(.init(.{
@@ -575,7 +575,7 @@ pub fn init(arena: Allocator, name_map: *const NameMap, player: *Storage) Alloca
 
     var equipment: std.ArrayList(Equipment) = try .initCapacity(arena, player.equipment.count);
     for (player.equipment.uids(), player.equipment.bits()) |equipment_uid, bits| {
-        if (player.avatars.getIndexByEquipmentUid(equipment_uid) != null)
+        if (player.getAvatarIndexByEquipmentUid(equipment_uid) != null)
             continue;
 
         equipment.appendAssumeCapacity(.init(.{
@@ -786,7 +786,7 @@ pub fn pack(
             .dressed_equipment = dressed_equipment,
         };
 
-        const result = player.avatars.getOrAdd(avatar) catch |err| switch (err) {
+        const result = player.getOrAddAvatar(avatar) catch |err| switch (err) {
             error.NoSpaceLeft => return diag.fail(.limit_exceeded, .{
                 .name = "avatars",
                 .limit = Storage.Avatar.count_max,
