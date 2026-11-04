@@ -5,9 +5,9 @@ const Io = std.Io;
 const mem = std.mem;
 const assert = std.debug.assert;
 
-const eldreda = @import("eldreda.zig");
-const protobuf = eldreda.protobuf;
-const PacketHead = eldreda.protobuf.gen.PacketHead;
+const yuzuha = @import("yuzuha.zig");
+const protobuf = yuzuha.protobuf;
+const PacketHead = yuzuha.protobuf.gen.PacketHead;
 
 id: u16,
 head: []u8,

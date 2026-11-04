@@ -1,10 +1,10 @@
 const std = @import("std");
 const ArrayList = std.ArrayList;
 
-const eldreda = @import("../eldreda.zig");
-const Session = eldreda.Session;
-const protobuf = eldreda.protobuf;
-const templates = eldreda.templates;
+const yuzuha = @import("../yuzuha.zig");
+const Session = yuzuha.Session;
+const protobuf = yuzuha.protobuf;
+const templates = yuzuha.templates;
 
 pub fn GetAreaMapDataCsReq(session: *Session) !void {
     var groups_buffer: [templates.UrbanAreaMapGroup.table.count]protobuf.gen.AreaGroupInfo =

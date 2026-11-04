@@ -1,7 +1,7 @@
-const eldreda = @import("../eldreda.zig");
-const Player = eldreda.Player;
-const Session = eldreda.Session;
-const protobuf = eldreda.protobuf;
+const yuzuha = @import("../yuzuha.zig");
+const Player = yuzuha.Player;
+const Session = yuzuha.Session;
+const protobuf = yuzuha.protobuf;
 
 pub fn PlayerLoginCsReq(session: *Session) !void {
     try session.sink.respond(protobuf.gen.PlayerLoginScRsp, &.{});

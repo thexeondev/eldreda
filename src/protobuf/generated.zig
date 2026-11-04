@@ -1,4 +1,4 @@
-//! Generated with eldreda-compile-proto. 2026, ReversedRooms. All bytes reversed.
+//! Generated with yuzuha-compile-proto. 2026, ReversedRooms. All bytes reversed.
 
 pub const ProtobufOptions = struct {
     Encoding: type,

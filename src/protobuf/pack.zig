@@ -1,9 +1,9 @@
 const std = @import("std");
 
-const eldreda = @import("../eldreda.zig");
-const Player = eldreda.Player;
-const gen = eldreda.protobuf.gen;
-const StaticMultiArrayList = eldreda.StaticMultiArrayList;
+const yuzuha = @import("../yuzuha.zig");
+const Player = yuzuha.Player;
+const gen = yuzuha.protobuf.gen;
+const StaticMultiArrayList = yuzuha.StaticMultiArrayList;
 
 const Skill = enum(u8) {
     common_attack = 0,

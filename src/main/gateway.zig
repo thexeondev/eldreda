@@ -4,18 +4,18 @@ const mem = std.mem;
 const Allocator = std.mem.Allocator;
 const IpAddress = std.Io.net.IpAddress;
 
-const eldreda = @import("eldreda");
-const rsa = eldreda.rsa;
-const sdk = eldreda.sdk;
-const Player = eldreda.Player;
-const Command = eldreda.Command;
-const Session = eldreda.Session;
-const protobuf = eldreda.protobuf;
+const yuzuha = @import("yuzuha");
+const rsa = yuzuha.rsa;
+const sdk = yuzuha.sdk;
+const Player = yuzuha.Player;
+const Command = yuzuha.Command;
+const Session = yuzuha.Session;
+const protobuf = yuzuha.protobuf;
 const PacketHead = protobuf.gen.PacketHead;
 const PlayerGetTokenCsReq = protobuf.gen.PlayerGetTokenCsReq;
 const PlayerGetTokenScRsp = protobuf.gen.PlayerGetTokenScRsp;
 
-const log = std.log.scoped(.@"eldreda::gateway");
+const log = std.log.scoped(.@"yuzuha::gateway");
 
 const Server = @import("root").Server;
 
@@ -159,7 +159,7 @@ fn serveConnection(
             .player_needs_save = false,
         };
 
-        try eldreda.commands.execute(&session);
+        try yuzuha.commands.execute(&session);
 
         if (session.player_needs_save) {
             try player.saveToFile(io, server.storage.player_dir, player_file_path);
@@ -183,7 +183,7 @@ const Client = struct {
         client.player_uid = token.player_uid;
         client.packet_id_counter = 0;
 
-        eldreda.random.getDecryptVector(&client.decrypt_vector, token.rand_key);
+        yuzuha.random.getDecryptVector(&client.decrypt_vector, token.rand_key);
     }
 };
 

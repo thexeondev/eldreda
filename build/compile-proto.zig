@@ -22,7 +22,7 @@ pub fn main(init: process.Init) !void {
     var output_writer: Io.File.Writer = .initStreaming(.stdout(), io, &output_buffer);
 
     output_writer.interface.writeAll(
-        \\//! Generated with eldreda-compile-proto. 2026, ReversedRooms. All bytes reversed.
+        \\//! Generated with yuzuha-compile-proto. 2026, ReversedRooms. All bytes reversed.
         \\
         \\pub const ProtobufOptions = struct {
         \\    Encoding: type,

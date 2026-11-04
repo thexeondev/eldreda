@@ -1,10 +1,10 @@
 const std = @import("std");
 
-const eldreda = @import("../eldreda.zig");
-const Player = eldreda.Player;
-const Session = eldreda.Session;
-const protobuf = eldreda.protobuf;
-const templates = eldreda.templates;
+const yuzuha = @import("../yuzuha.zig");
+const Player = yuzuha.Player;
+const Session = yuzuha.Session;
+const protobuf = yuzuha.protobuf;
+const templates = yuzuha.templates;
 
 pub fn GetAvatarDataCsReq(session: *Session) !void {
     const buffer_size = protobuf.pack.AvatarInfoList.bufferSizeFor(Player.Avatar.count_max);

@@ -1,7 +1,7 @@
 .{
-    .name = .eldreda,
+    .name = .yuzuha,
     .version = "0.1.0",
     .minimum_zig_version = "0.17.0",
     .paths = .{""},
-    .fingerprint = 0xe3683c212e3d1337,
+    .fingerprint = 0x6df4c837c8621337,
 }

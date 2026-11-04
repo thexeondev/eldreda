@@ -1,7 +1,7 @@
 zig-out/
 .zig-dist/
 .zig-cache/
-eldreda-storage/
+yuzuha-storage/
 proto/
 
 assets/TextMap_EnTemplateTb.bin

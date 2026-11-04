@@ -8,7 +8,7 @@ const Allocator = std.mem.Allocator;
 fn usage(io: Io) noreturn {
     Io.File.stdout().writeStreamingAll(
         io,
-        "usage: eldreda-convert-templatetb [input_dir] [output_dir]\n",
+        "usage: yuzuha-convert-templatetb [input_dir] [output_dir]\n",
     ) catch {};
     process.exit(1);
 }

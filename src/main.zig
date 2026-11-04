@@ -11,10 +11,10 @@ const fatal = std.process.fatal;
 const Allocator = std.mem.Allocator;
 const IpAddress = std.Io.net.IpAddress;
 
-const eldreda = @import("eldreda");
-const sdk = eldreda.sdk;
-const http = eldreda.http;
-const Configuration = eldreda.Configuration;
+const yuzuha = @import("yuzuha");
+const sdk = yuzuha.sdk;
+const http = yuzuha.http;
+const Configuration = yuzuha.Configuration;
 
 const build_options = @import("build_options");
 
@@ -30,10 +30,10 @@ const default_http_address = "127.0.0.1:12401";
 const default_gate_address = "127.0.0.1:20501";
 const default_public_url_prefix = "http://127.0.0.1:12401";
 const sdk_account_storage_filename = "sdk_accounts.bin";
-const default_config_path = "eldreda.zon";
+const default_config_path = "yuzuha.zon";
 
 pub const Storage = struct {
-    const default_root_path = "eldreda-storage";
+    const default_root_path = "yuzuha-storage";
     const player_dir_sub_path = "players";
 
     root: Io.Dir,
@@ -73,7 +73,7 @@ pub const Server = struct {
 
 fn generalUsage(io: Io) noreturn {
     Io.File.stdout().writeStreamingAll(io,
-        \\Usage: eldreda [command] [options]
+        \\Usage: yuzuha [command] [options]
         \\
         \\Commands:
         \\  serve         (default) Start the game server
@@ -90,7 +90,7 @@ fn generalUsage(io: Io) noreturn {
 
 fn serveUsage(io: Io) noreturn {
     Io.File.stdout().writeStreamingAll(io, std.fmt.comptimePrint(
-        \\Usage: eldreda serve [options]
+        \\Usage: yuzuha serve [options]
         \\
         \\Options:
         \\  --help, -h             Print this help and exit
@@ -189,20 +189,20 @@ pub fn main(init: process.Init.Minimal) !void {
         .exit_if_not_found = config_path_maybe != null,
     });
 
-    const query_dispatch_response = try eldreda.dispatch.buildQueryDispatchResponse(.{
+    const query_dispatch_response = try yuzuha.dispatch.buildQueryDispatchResponse(.{
         .gpa = gpa,
         .arena = arena,
-        .region_name = "eldreda",
-        .region_title = "Eldreda",
+        .region_name = "yuzuha",
+        .region_title = "YuZuHa",
         .public_url_prefix = public_url_prefix,
     });
 
     var ip4_string_buffer: ["255.255.255.255".len]u8 = undefined;
-    const query_gateway_response = try eldreda.dispatch.buildQueryGatewayResponse(.{
+    const query_gateway_response = try yuzuha.dispatch.buildQueryGatewayResponse(.{
         .gpa = gpa,
         .arena = arena,
-        .region_name = "eldreda",
-        .region_title = "Eldreda",
+        .region_name = "yuzuha",
+        .region_title = "YuZuHa",
         .client_secret_key = conf.client_secret_key,
         .cdn = &conf.version.cdn,
         .public_url_prefix = public_url_prefix,
@@ -226,7 +226,7 @@ pub fn main(init: process.Init.Minimal) !void {
         },
     });
 
-    const fallback_dispatch_response = try eldreda.dispatch.buildFallbackResponse(.{
+    const fallback_dispatch_response = try yuzuha.dispatch.buildFallbackResponse(.{
         .gpa = gpa,
         .arena = arena,
         .supported_version = conf.version.tag,
@@ -298,7 +298,7 @@ fn startHttp(io: Io, gpa: Allocator, server: *Server, options: HttpServerOptions
     var group: Io.Group = .init;
     defer group.cancel(io);
 
-    const scoped_log = std.log.scoped(.@"eldreda::http");
+    const scoped_log = std.log.scoped(.@"yuzuha::http");
     scoped_log.info(
         "waiting for dispatch and sdk requests at http://{f}",
         .{net_server.socket.address},
@@ -570,10 +570,10 @@ fn loginByPassword(io: Io, gpa: Allocator, scope: *const HttpRequestScope) !void
         else => return try scope.fail(.bad_request),
     };
 
-    const username = eldreda.rsa.decryptString(request.account) orelse
+    const username = yuzuha.rsa.decryptString(request.account) orelse
         return try scope.fail(.bad_request);
 
-    const password = eldreda.rsa.decryptString(request.password) orelse
+    const password = yuzuha.rsa.decryptString(request.password) orelse
         return try scope.fail(.bad_request);
 
     const account_index, const account = try getAndVerifyAccountByPassword(

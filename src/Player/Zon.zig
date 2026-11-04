@@ -6,9 +6,9 @@ const std = @import("std");
 const Io = std.Io;
 const Allocator = std.mem.Allocator;
 
-const eldreda = @import("../eldreda.zig");
-const Player = eldreda.Player;
-const templates = eldreda.templates;
+const yuzuha = @import("../yuzuha.zig");
+const Player = yuzuha.Player;
+const templates = yuzuha.templates;
 
 role: Role,
 main_city: MainCity,

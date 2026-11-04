@@ -5,7 +5,7 @@ const Io = std.Io;
 const fatal = std.process.fatal;
 const Allocator = std.mem.Allocator;
 
-pub const defaults: Configuration = @import("defaults/eldreda.zon");
+pub const defaults: Configuration = @import("defaults/yuzuha.zon");
 
 version: Version,
 client_secret_key: []const u8,

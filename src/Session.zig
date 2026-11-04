@@ -4,10 +4,10 @@ const std = @import("std");
 const Io = std.Io;
 const assert = std.debug.assert;
 
-const eldreda = @import("eldreda.zig");
-const Command = eldreda.Command;
-const protobuf = eldreda.protobuf;
-const Player = eldreda.Player;
+const yuzuha = @import("yuzuha.zig");
+const Command = yuzuha.Command;
+const protobuf = yuzuha.protobuf;
+const Player = yuzuha.Player;
 
 time: Io.Timestamp,
 command: Command,

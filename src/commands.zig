@@ -1,10 +1,10 @@
 const std = @import("std");
 
-const eldreda = @import("eldreda.zig");
-const Session = eldreda.Session;
-const protobuf = eldreda.protobuf;
+const yuzuha = @import("yuzuha.zig");
+const Session = yuzuha.Session;
+const protobuf = yuzuha.protobuf;
 
-const log = std.log.scoped(.@"eldreda::commands");
+const log = std.log.scoped(.@"yuzuha::commands");
 
 const namespaces: []const type = &.{
     @import("commands/player.zig"),

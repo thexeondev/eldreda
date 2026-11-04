@@ -8,8 +8,8 @@ const mem = std.mem;
 const assert = std.debug.assert;
 const hasUniqueRepresentation = std.meta.hasUniqueRepresentation;
 
-const eldreda = @import("eldreda.zig");
-const templates = eldreda.templates;
+const yuzuha = @import("yuzuha.zig");
+const templates = yuzuha.templates;
 
 pub const Zon = @import("Player/Zon.zig");
 
@@ -777,7 +777,7 @@ pub fn initDefaults(player: *Player) void {
         .role = .{
             .avatar = .wise,
             .control_avatar = .wise,
-            .control_guise_avatar = Role.Guise.fromInt(1601).?,
+            .control_guise_avatar = Role.Guise.fromInt(1411).?,
         },
         .time = .{
             .day = .friday,
@@ -804,7 +804,7 @@ pub fn initDefaults(player: *Player) void {
         // Workaround for Kafka locking the character menu,
         // to be removed once client-side bug is fixed.
         var avatar_bits = avatar_bits_maxed_out;
-        avatar_bits.flags.favorite = id_int == 1011;
+        avatar_bits.flags.favorite = id_int == 1411;
 
         const result = player.avatars.getOrAdd(.{
             .id = id,
