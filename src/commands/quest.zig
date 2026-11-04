@@ -48,7 +48,7 @@ pub fn StartTrainingQuestCsReq(session: *Session) !void {
     var avatar_info_list: protobuf.pack.AvatarInfoList = .empty;
     var avatars = session.player.avatars();
     while (avatars.next()) |avatar|
-        protobuf.pack.avatarInfo(avatar_info_list.addOne(), avatar);
+        protobuf.pack.avatarInfo(avatar_info_list.addOneAssumeCapacity(), avatar);
 
     try session.sink.notify(protobuf.gen.EnterSceneScNotify, &.{
         .scene = .{

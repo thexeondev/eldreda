@@ -69,13 +69,16 @@ pub fn avatarInfo(out: AvatarInfoList.Ptr, avatar: Player.Avatar) void {
     };
 }
 
-pub fn weaponInfo(out: *gen.WeaponInfo, weapon: Player.Storage.Weapon) void {
+pub fn weaponInfo(
+    out: *gen.WeaponInfo,
+    kv: Player.Weapon.KeyValue,
+) void {
     out.* = .{
-        .uid = @backingInt(weapon.uid_maybe.unwrap().?),
-        .id = @backingInt(weapon.bits.id),
+        .uid = kv.uid,
+        .id = kv.weapon.id,
         .level = 60,
         .star = 5,
-        .refine_level = @backingInt(weapon.bits.refine),
+        .refine_level = kv.weapon.refine,
     };
 }
 

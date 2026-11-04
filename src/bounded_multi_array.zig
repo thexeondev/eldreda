@@ -39,7 +39,7 @@ pub fn BoundedMultiArray(comptime Struct: type, comptime capacity: u32) type {
             );
         };
 
-        pub fn addOne(list: *List) Ptr {
+        pub fn addOneAssumeCapacity(list: *List) Ptr {
             assert(capacity > list.count);
             const index = list.count;
             defer list.count += 1;
@@ -47,11 +47,21 @@ pub fn BoundedMultiArray(comptime Struct: type, comptime capacity: u32) type {
             return list.getPtr(index);
         }
 
-        pub fn append(list: *List, item: Struct) void {
-            const ptr = list.addOne();
+        pub fn addOne(list: *List) error{NoSpaceLeft}!Ptr {
+            if (list.count == capacity) return error.NoSpaceLeft;
+            return list.addOneAssumeCapacity();
+        }
+
+        pub fn appendAssumeCapacity(list: *List, item: Struct) void {
+            const ptr = list.addOneAssumeCapacity();
 
             inline for (struct_info.field_names) |field_name|
                 @field(ptr, field_name).* = @field(item, field_name);
+        }
+
+        pub fn append(list: *List, item: Struct) error{NoSpaceLeft}!void {
+            if (list.count == capacity) return error.NoSpaceLeft;
+            return list.appendAssumeCapacity(item);
         }
 
         pub fn getPtr(list: *List, index: usize) Ptr {

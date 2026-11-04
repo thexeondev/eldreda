@@ -223,8 +223,8 @@ pub const Weapon = struct {
 
     fn init(data: Storage.Weapon, name_map: *const NameMap) Weapon {
         return .{
-            .name = name_map.weapon_name_by_id.get(data.bits.id).?,
-            .refine = @backingInt(data.bits.refine),
+            .name = name_map.weapon_name_by_id.get(data.id).?,
+            .refine = @backingInt(data.refine),
         };
     }
 
@@ -234,17 +234,14 @@ pub const Weapon = struct {
         diag: *PackDiagnostics,
     ) PackError!Storage.Weapon {
         return .{
-            .uid_maybe = .none,
-            .bits = .{
-                .id = name_map.weapon_id_by_name.get(weapon.name) orelse return diag.fail(
-                    .name_invalid,
-                    .{ .kind = "weapon", .name = weapon.name },
-                ),
-                .refine = Storage.Weapon.Refine.fromInt(weapon.refine) orelse return diag.fail(
-                    .weapon_refine_invalid,
-                    .{ .name = weapon.name, .encountered = weapon.refine },
-                ),
-            },
+            .id = name_map.weapon_id_by_name.get(weapon.name) orelse return diag.fail(
+                .name_invalid,
+                .{ .kind = "weapon", .name = weapon.name },
+            ),
+            .refine = Storage.Weapon.Refine.fromInt(weapon.refine) orelse return diag.fail(
+                .weapon_refine_invalid,
+                .{ .name = weapon.name, .encountered = weapon.refine },
+            ),
         };
     }
 };
@@ -522,11 +519,8 @@ pub fn init(arena: Allocator, name_map: *const NameMap, player: *Storage) Alloca
         player.avatars.items(.dressed_equipment),
     ) |*avatar_zon, bits, id, weapon_uid_maybe, dressed_equipment| {
         const weapon_maybe: ?Weapon = if (weapon_uid_maybe.unwrap()) |weapon_uid| weapon: {
-            const weapon_index = player.weapons.getIndexByUid(weapon_uid).?;
-            break :weapon .init(.{
-                .uid_maybe = .wrap(weapon_uid),
-                .bits = player.weapons.bits()[weapon_index],
-            }, name_map);
+            const weapon_index = player.getWeaponIndexByUid(weapon_uid).?;
+            break :weapon .init(player.weapons.items(.weapon)[weapon_index], name_map);
         } else null;
 
         var equipment: Avatar.EquipmentSlots = undefined;
@@ -563,14 +557,11 @@ pub fn init(arena: Allocator, name_map: *const NameMap, player: *Storage) Alloca
     }
 
     var weapons: std.ArrayList(Weapon) = try .initCapacity(arena, player.weapons.count);
-    for (player.weapons.uids(), player.weapons.bits()) |weapon_uid, bits| {
-        if (player.getAvatarIndexByWeaponUid(weapon_uid) != null)
+    for (player.weapons.items(.uid), player.weapons.items(.weapon)) |uid, weapon| {
+        if (player.getAvatarIndexByWeaponUid(uid) != null)
             continue;
 
-        weapons.appendAssumeCapacity(.init(.{
-            .uid_maybe = .wrap(weapon_uid),
-            .bits = bits,
-        }, name_map));
+        weapons.appendAssumeCapacity(.init(weapon, name_map));
     }
 
     var equipment: std.ArrayList(Equipment) = try .initCapacity(arena, player.equipment.count);
@@ -687,6 +678,7 @@ pub fn pack(
     var player: Storage = .{
         .avatars = .empty,
         .weapons = .empty,
+        .weapon_uid_counter = 0,
         .equipment = .empty,
         .main_city = .{
             .section = @fromBackingInt(section_id_int),
@@ -719,7 +711,7 @@ pub fn pack(
     for (zon.avatars) |avatar_zon| {
         const weapon_uid_maybe: Storage.Weapon.Uid.Optional = if (avatar_zon.weapon) |weapon_zon| add: {
             const weapon = try weapon_zon.pack(name_map, diag);
-            const weapon_uid = player.weapons.add(weapon) catch |err| switch (err) {
+            const weapon_uid = player.addWeapon(weapon) catch |err| switch (err) {
                 error.NoSpaceLeft => return diag.fail(.limit_exceeded, .{
                     .name = "weapons",
                     .limit = Storage.Weapon.count_max,
@@ -800,7 +792,7 @@ pub fn pack(
 
     for (zon.weapons_undressed) |weapon_zon| {
         const weapon = try weapon_zon.pack(name_map, diag);
-        _ = player.weapons.add(weapon) catch |err| switch (err) {
+        _ = player.addWeapon(weapon) catch |err| switch (err) {
             error.NoSpaceLeft => return diag.fail(.limit_exceeded, .{
                 .name = "weapons",
                 .limit = Storage.Weapon.count_max,

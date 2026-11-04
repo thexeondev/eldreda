@@ -38,8 +38,8 @@ pub const Avatar = struct {
         player: *const Player,
 
         pub fn next(it: *Iterator) ?Avatar {
-            it.index += 1;
             if (it.player.storage.avatars.count == it.index) return null;
+            defer it.index += 1;
 
             return it.player.avatarAtIndex(it.index);
         }
@@ -74,6 +74,28 @@ pub const Avatar = struct {
 
             return required_unlock;
         }
+    };
+};
+
+pub const Weapon = struct {
+    id: u32,
+    refine: u32,
+
+    pub const KeyValue = struct {
+        uid: u32,
+        weapon: Weapon,
+
+        pub const Iterator = struct {
+            index: u32,
+            player: *const Player,
+
+            pub fn next(it: *Iterator) ?Weapon.KeyValue {
+                if (it.player.storage.weapons.count == it.index) return null;
+                defer it.index += 1;
+
+                return it.player.weaponAtIndex(it.index);
+            }
+        };
     };
 };
 
@@ -118,7 +140,23 @@ fn avatarAtIndex(player: *const Player, index: u32) Avatar {
     };
 }
 
+fn weaponAtIndex(player: *const Player, index: u32) Weapon.KeyValue {
+    const storage_kv = player.storage.weapons.getPtr(index);
+
+    return .{
+        .uid = @backingInt(storage_kv.uid.*),
+        .weapon = .{
+            .id = @backingInt(storage_kv.weapon.id),
+            .refine = @backingInt(storage_kv.weapon.refine),
+        },
+    };
+}
+
 pub fn avatars(player: *const Player) Avatar.Iterator {
+    return .{ .player = player, .index = 0 };
+}
+
+pub fn weapons(player: *const Player) Weapon.KeyValue.Iterator {
     return .{ .player = player, .index = 0 };
 }
 
@@ -157,7 +195,7 @@ pub fn updateAvatar(player: *Player, avatar: Avatar) void {
 
 pub fn hasWeaponWithUid(player: *Player, uid_int: u32) bool {
     const uid: Storage.Weapon.Uid = @fromBackingInt(uid_int);
-    return player.storage.weapons.getIndexByUid(uid) != null;
+    return player.storage.getWeaponIndexByUid(uid) != null;
 }
 
 pub fn hasEquipmentWithUid(player: *Player, uid_int: u32) bool {
@@ -200,7 +238,7 @@ fn updateAvatarAtIndex(player: *Player, avatar_index: u32, avatar: Avatar) void 
 
 fn appendAvatarToSync(player: *Player, avatar: Avatar) void {
     player.sync.populated = true;
-    pack.avatarInfo(player.sync.avatar_list.addOne(), avatar);
+    pack.avatarInfo(player.sync.avatar_list.addOneAssumeCapacity(), avatar);
 }
 
 pub fn buildPlayerSyncScNotify(player: *Player) ?gen.PlayerSyncScNotify {

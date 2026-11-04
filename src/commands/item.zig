@@ -8,14 +8,12 @@ const protobuf = yuzuha.protobuf;
 pub fn GetWeaponDataCsReq(session: *Session) !void {
     var weapon_buffer: [Player.Storage.Weapon.count_max]protobuf.gen.WeaponInfo = undefined;
     var weapon_list: std.ArrayList(protobuf.gen.WeaponInfo) = .initBuffer(&weapon_buffer);
+    var weapons = session.player.weapons();
 
-    for (
-        session.player.storage.weapons.uids(),
-        session.player.storage.weapons.bits(),
-    ) |uid, bits| {
+    while (weapons.next()) |weapon_kv| {
         protobuf.pack.weaponInfo(
             weapon_list.addOneAssumeCapacity(),
-            .{ .uid_maybe = .wrap(uid), .bits = bits },
+            weapon_kv,
         );
     }
 
@@ -32,7 +30,7 @@ pub fn GetEquipDataCsReq(session: *Session) !void {
         session.player.storage.equipment.bits(),
     ) |uid, bits| {
         protobuf.pack.equipInfo(
-            equip_list.addOne(),
+            equip_list.addOneAssumeCapacity(),
             .{ .uid_maybe = .wrap(uid), .bits = bits },
         );
     }

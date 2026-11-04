@@ -11,7 +11,7 @@ pub fn GetAvatarDataCsReq(session: *Session) !void {
     var avatars = session.player.avatars();
 
     while (avatars.next()) |avatar|
-        protobuf.pack.avatarInfo(avatar_info_list.addOne(), avatar);
+        protobuf.pack.avatarInfo(avatar_info_list.addOneAssumeCapacity(), avatar);
 
     return session.sink.respond(protobuf.gen.GetAvatarDataScRsp, &.{
         .avatar_list = avatar_info_list.items(.avatar_info),
