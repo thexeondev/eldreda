@@ -293,6 +293,13 @@ pub fn hasWeaponWithUid(player: *Player, uid_int: u32) bool {
     return player.storage.getWeaponIndexByUid(uid) != null;
 }
 
+pub fn getWeaponByUid(player: *Player, uid_int: u32) ?Weapon {
+    const uid: Storage.Weapon.Uid = @fromBackingInt(uid_int);
+    const weapon_index = player.storage.getWeaponIndexByUid(uid) orelse return null;
+
+    return player.weaponAtIndex(weapon_index).weapon;
+}
+
 pub fn hasEquipmentWithUid(player: *Player, uid_int: u32) bool {
     const uid: Storage.Equipment.Uid = @fromBackingInt(uid_int);
     return player.storage.getEquipmentIndexByUid(uid) != null;

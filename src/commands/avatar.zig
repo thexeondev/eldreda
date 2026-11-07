@@ -34,7 +34,7 @@ pub fn AvatarFavoriteCsReq(session: *Session) !void {
 pub fn WeaponDressCsReq(session: *Session) !void {
     const request = try session.command.decodeBody(protobuf.gen.WeaponDressCsReq.Decoded);
 
-    if (!session.player.hasWeaponWithUid(request.weapon_uid))
+    const weapon = session.player.getWeaponByUid(request.weapon_uid) orelse
         return session.sink.respondMinimal(.WeaponDressScRsp, .{ .retcode = .RET_ITEM_NOT_FOUND });
 
     var avatar_to_dress = session.player.getAvatarById(request.avatar_id) orelse
@@ -47,7 +47,17 @@ pub fn WeaponDressCsReq(session: *Session) !void {
     }
 
     avatar_to_dress.weapon_uid_maybe = request.weapon_uid;
-    // TODO: update weapon_show
+
+    switch (avatar_to_dress.weapon_show) {
+        .unlocked_show, .unlocked_hidden => {},
+        .locked => {
+            const weapon_template_index = templates.Weapon.table.getIndexByKey(weapon.id).?;
+            const weapon_avatar_id = templates.Weapon.table.items(.avatar_id)[weapon_template_index];
+            if (weapon_avatar_id == avatar_to_dress.id)
+                avatar_to_dress.weapon_show = .unlocked_show;
+        },
+    }
+
     session.player.updateAvatar(avatar_to_dress);
 
     try session.notify();
