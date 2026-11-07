@@ -24,26 +24,24 @@ pub fn GetWeaponDataCsReq(session: *Session) !void {
 
 pub fn GetEquipDataCsReq(session: *Session) !void {
     var equip_list: protobuf.pack.EquipInfoList = .empty;
+    var equipment = session.player.equipment();
 
-    for (
-        session.player.storage.equipment.uids(),
-        session.player.storage.equipment.bits(),
-    ) |uid, bits| {
+    while (equipment.next()) |equipment_kv| {
         protobuf.pack.equipInfo(
             equip_list.addOneAssumeCapacity(),
-            .{ .uid_maybe = .wrap(uid), .bits = bits },
+            equipment_kv,
         );
     }
 
-    try session.sink.respond(protobuf.gen.GetEquipDataScRsp, &.{
+    return session.sink.respond(protobuf.gen.GetEquipDataScRsp, &.{
         .equip_list = equip_list.items(.equip_info),
     });
 }
 
 pub fn GetItemDataCsReq(session: *Session) !void {
-    try session.sink.respond(protobuf.gen.GetItemDataScRsp, &.{});
+    return session.sink.respond(protobuf.gen.GetItemDataScRsp, &.{});
 }
 
 pub fn GetWishlistDataCsReq(session: *Session) !void {
-    try session.sink.respond(protobuf.gen.GetWishlistDataScRsp, &.{});
+    return session.sink.respond(protobuf.gen.GetWishlistDataScRsp, &.{});
 }

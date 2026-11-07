@@ -102,6 +102,30 @@ pub const Weapon = struct {
 };
 
 pub const Equipment = struct {
+    id: u32,
+    main_property: Property,
+    sub_properties: [sub_property_count]?Property,
+
+    pub const sub_property_count = 4;
+
+    pub const Property = struct {
+        key: u16,
+        base: u16,
+        add: u16,
+
+        fn fromStorage(storage: *const Storage.Equipment.Property) Property {
+            return .{
+                .key = @backingInt(storage.key),
+                .base = storage.base,
+                .add = storage.add,
+            };
+        }
+
+        fn fromStorageOptional(optional: *const Storage.Equipment.Property.Optional) ?Property {
+            return if (optional.unwrap()) |storage| .fromStorage(&storage) else null;
+        }
+    };
+
     pub const Type = enum(u8) {
         @"1" = 1,
         @"2" = 2,
@@ -109,6 +133,23 @@ pub const Equipment = struct {
         @"4" = 4,
         @"5" = 5,
         @"6" = 6,
+    };
+
+    pub const KeyValue = struct {
+        uid: u32,
+        equipment: Equipment,
+
+        pub const Iterator = struct {
+            index: u32,
+            player: *const Player,
+
+            pub fn next(it: *Iterator) ?Equipment.KeyValue {
+                if (it.player.storage.equipment.count == it.index) return null;
+                defer it.index += 1;
+
+                return it.player.equipmentAtIndex(it.index);
+            }
+        };
     };
 };
 
@@ -167,11 +208,32 @@ fn weaponAtIndex(player: *const Player, index: u32) Weapon.KeyValue {
     };
 }
 
+fn equipmentAtIndex(player: *const Player, index: u32) Equipment.KeyValue {
+    const storage_kv = player.storage.equipment.getPtr(index);
+
+    var sub_properties: [4]?Equipment.Property = undefined;
+    for (&sub_properties, &storage_kv.equipment.sub_properties) |*sp, *sp_storage|
+        sp.* = .fromStorageOptional(sp_storage);
+
+    return .{
+        .uid = @backingInt(storage_kv.uid.*),
+        .equipment = .{
+            .id = @backingInt(storage_kv.equipment.id),
+            .main_property = .fromStorage(&storage_kv.equipment.main_property),
+            .sub_properties = sub_properties,
+        },
+    };
+}
+
 pub fn avatars(player: *const Player) Avatar.Iterator {
     return .{ .player = player, .index = 0 };
 }
 
 pub fn weapons(player: *const Player) Weapon.KeyValue.Iterator {
+    return .{ .player = player, .index = 0 };
+}
+
+pub fn equipment(player: *const Player) Equipment.KeyValue.Iterator {
     return .{ .player = player, .index = 0 };
 }
 
@@ -220,7 +282,7 @@ pub fn hasWeaponWithUid(player: *Player, uid_int: u32) bool {
 
 pub fn hasEquipmentWithUid(player: *Player, uid_int: u32) bool {
     const uid: Storage.Equipment.Uid = @fromBackingInt(uid_int);
-    return player.storage.equipment.getIndexByUid(uid) != null;
+    return player.storage.getEquipmentIndexByUid(uid) != null;
 }
 
 fn updateAvatarAtIndex(player: *Player, avatar_index: u32, avatar: Avatar) void {

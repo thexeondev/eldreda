@@ -437,13 +437,13 @@ pub const Equipment = struct {
 
     fn init(data: Storage.Equipment, name_map: *const NameMap) Equipment {
         return .{
-            .id = name_map.getEquipmentNameAndRarityById(data.bits.id),
-            .main_property = .init(data.bits.main_property),
+            .id = name_map.getEquipmentNameAndRarityById(data.id),
+            .main_property = .init(data.main_property),
             .sub_properties = .{
-                .@"1" = if (data.bits.sub_properties[0].unwrap()) |p| .init(p) else null,
-                .@"2" = if (data.bits.sub_properties[1].unwrap()) |p| .init(p) else null,
-                .@"3" = if (data.bits.sub_properties[2].unwrap()) |p| .init(p) else null,
-                .@"4" = if (data.bits.sub_properties[3].unwrap()) |p| .init(p) else null,
+                .@"1" = if (data.sub_properties[0].unwrap()) |p| .init(p) else null,
+                .@"2" = if (data.sub_properties[1].unwrap()) |p| .init(p) else null,
+                .@"3" = if (data.sub_properties[2].unwrap()) |p| .init(p) else null,
+                .@"4" = if (data.sub_properties[3].unwrap()) |p| .init(p) else null,
             },
         };
     }
@@ -454,34 +454,31 @@ pub const Equipment = struct {
         diag: *PackDiagnostics,
     ) PackError!Storage.Equipment {
         return .{
-            .uid_maybe = .none,
-            .bits = .{
-                .id = name_map.getEquipmentIdByNameForRarity(
-                    equipment.id.name,
-                    equipment.id.rarity,
-                ) orelse return diag.fail(
-                    .equipment_invalid,
-                    .{ .name = equipment.id.name, .rarity = equipment.id.rarity },
-                ),
-                .main_property = try equipment.main_property.pack(diag),
-                .sub_properties = sub_properties: {
-                    const sub_properties_count = Storage.Equipment.Property.sub_count;
-                    var sub_properties: [sub_properties_count]Storage.Equipment.Property.Optional =
-                        undefined;
+            .id = name_map.getEquipmentIdByNameForRarity(
+                equipment.id.name,
+                equipment.id.rarity,
+            ) orelse return diag.fail(
+                .equipment_invalid,
+                .{ .name = equipment.id.name, .rarity = equipment.id.rarity },
+            ),
+            .main_property = try equipment.main_property.pack(diag),
+            .sub_properties = sub_properties: {
+                const sub_properties_count = Storage.Equipment.Property.sub_count;
+                var sub_properties: [sub_properties_count]Storage.Equipment.Property.Optional =
+                    undefined;
 
-                    inline for (
-                        &sub_properties,
-                        @typeInfo(SubProperties).@"struct".field_names,
-                    ) |*sub_property_maybe, property_name| {
-                        if (@field(equipment.sub_properties, property_name)) |property| {
-                            sub_property_maybe.* = .wrap(try property.pack(diag));
-                        } else {
-                            sub_property_maybe.* = .none;
-                        }
+                inline for (
+                    &sub_properties,
+                    @typeInfo(SubProperties).@"struct".field_names,
+                ) |*sub_property_maybe, property_name| {
+                    if (@field(equipment.sub_properties, property_name)) |property| {
+                        sub_property_maybe.* = .wrap(try property.pack(diag));
+                    } else {
+                        sub_property_maybe.* = .none;
                     }
+                }
 
-                    break :sub_properties sub_properties;
-                },
+                break :sub_properties sub_properties;
             },
         };
     }
@@ -529,11 +526,11 @@ pub fn init(arena: Allocator, name_map: *const NameMap, player: *Storage) Alloca
             dressed_equipment,
         ) |slot_name, equipment_uid_maybe| {
             if (equipment_uid_maybe.unwrap()) |equipment_uid| {
-                const equipment_index = player.equipment.getIndexByUid(equipment_uid).?;
-                @field(equipment, slot_name) = .init(.{
-                    .uid_maybe = .wrap(equipment_uid),
-                    .bits = player.equipment.bits()[equipment_index],
-                }, name_map);
+                const equipment_index = player.getEquipmentIndexByUid(equipment_uid).?;
+                @field(equipment, slot_name) = .init(
+                    player.equipment.items(.equipment)[equipment_index],
+                    name_map,
+                );
             } else {
                 @field(equipment, slot_name) = null;
             }
@@ -564,15 +561,12 @@ pub fn init(arena: Allocator, name_map: *const NameMap, player: *Storage) Alloca
         weapons.appendAssumeCapacity(.init(weapon, name_map));
     }
 
-    var equipment: std.ArrayList(Equipment) = try .initCapacity(arena, player.equipment.count);
-    for (player.equipment.uids(), player.equipment.bits()) |equipment_uid, bits| {
-        if (player.getAvatarIndexByEquipmentUid(equipment_uid) != null)
+    var equipment_list: std.ArrayList(Equipment) = try .initCapacity(arena, player.equipment.count);
+    for (player.equipment.items(.uid), player.equipment.items(.equipment)) |uid, equipment| {
+        if (player.getAvatarIndexByEquipmentUid(uid) != null)
             continue;
 
-        equipment.appendAssumeCapacity(.init(.{
-            .uid_maybe = .wrap(equipment_uid),
-            .bits = bits,
-        }, name_map));
+        equipment_list.appendAssumeCapacity(.init(equipment, name_map));
     }
 
     return .{
@@ -581,7 +575,7 @@ pub fn init(arena: Allocator, name_map: *const NameMap, player: *Storage) Alloca
         .time = time,
         .avatars = avatars,
         .weapons_undressed = weapons.items,
-        .equipment_undressed = equipment.items,
+        .equipment_undressed = equipment_list.items,
     };
 }
 
@@ -680,6 +674,7 @@ pub fn pack(
         .weapons = .empty,
         .weapon_uid_counter = 0,
         .equipment = .empty,
+        .equipment_uid_counter = 0,
         .main_city = .{
             .section = @fromBackingInt(section_id_int),
         },
@@ -731,7 +726,7 @@ pub fn pack(
             if (@field(avatar_zon.equipment, slot_name)) |equipment_zon| {
                 const equipment = try equipment_zon.pack(name_map, diag);
                 equipment_uid_maybe.* =
-                    .wrap(player.equipment.add(equipment) catch |err| switch (err) {
+                    .wrap(player.addEquipment(equipment) catch |err| switch (err) {
                         error.NoSpaceLeft => return diag.fail(.limit_exceeded, .{
                             .name = "equipment",
                             .limit = Storage.Equipment.count_max,
@@ -802,7 +797,7 @@ pub fn pack(
 
     for (zon.equipment_undressed) |equipment_zon| {
         const equipment = try equipment_zon.pack(name_map, diag);
-        _ = player.equipment.add(equipment) catch |err| switch (err) {
+        _ = player.addEquipment(equipment) catch |err| switch (err) {
             error.NoSpaceLeft => return diag.fail(.limit_exceeded, .{
                 .name = "equipment",
                 .limit = Storage.Equipment.count_max,

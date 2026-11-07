@@ -3,7 +3,8 @@
 avatars: BoundedMultiArray(Avatar, Avatar.count_max),
 weapons: BoundedMultiArray(Weapon.KeyValue, Weapon.count_max),
 weapon_uid_counter: u32,
-equipment: Equipment.List,
+equipment: BoundedMultiArray(Equipment.KeyValue, Equipment.count_max),
+equipment_uid_counter: u32,
 // TODO: these 3 can be merged into a single struct so that they use a single buffer for save/load.
 main_city: MainCity,
 role: Role,
@@ -29,18 +30,18 @@ comptime {
 }
 
 pub const Header = extern struct {
-    pub const current_version: u32 = 10;
-
-    comptime {
-        assert(hasUniqueRepresentation(@This()));
-    }
-
     file_version: u32,
     avatar_count: u32,
     weapon_count: u32,
     weapon_uid_counter: u32,
     equipment_count: u32,
     equipment_uid_counter: u32,
+
+    comptime {
+        assert(hasUniqueRepresentation(@This()));
+    }
+
+    pub const current_version: u32 = 10;
 };
 
 pub const Avatar = struct {
@@ -357,22 +358,22 @@ pub fn getWeaponIndexByUid(storage: *Storage, uid: Weapon.Uid) ?u32 {
     return null;
 }
 
-pub const Equipment = struct {
-    uid_maybe: Uid.Optional,
-    bits: Bits,
+pub const Equipment = extern struct {
+    id: Id,
+    main_property: Property,
+    sub_properties: [Property.sub_count]Property.Optional,
+    _: u16 = 0,
+
+    comptime {
+        assert(hasUniqueRepresentation(@This()));
+    }
+
+    pub const KeyValue = struct {
+        uid: Uid,
+        equipment: Equipment,
+    };
 
     pub const count_max = 3_000;
-
-    pub const Bits = extern struct {
-        id: Id,
-        main_property: Property,
-        sub_properties: [Property.sub_count]Property.Optional,
-        _: u16 = 0,
-
-        comptime {
-            assert(hasUniqueRepresentation(@This()));
-        }
-    };
 
     pub const Property = extern struct {
         key: Key,
@@ -487,54 +488,30 @@ pub const Equipment = struct {
             }
         };
     };
-
-    pub const List = struct {
-        count: u32,
-        uid_counter: u32,
-        bits_buffer: [count_max]Equipment.Bits,
-        uids_buffer: [count_max]Equipment.Uid,
-
-        pub const empty: List = .{
-            .count = 0,
-            .uid_counter = 0,
-            .bits_buffer = undefined,
-            .uids_buffer = undefined,
-        };
-
-        pub fn uids(list: *List) []Equipment.Uid {
-            return list.uids_buffer[0..list.count];
-        }
-
-        pub fn bits(list: *List) []Equipment.Bits {
-            return list.bits_buffer[0..list.count];
-        }
-
-        pub fn getIndexByUid(list: *List, uid: Equipment.Uid) ?u32 {
-            if (mem.findScalar(Uid, list.uids(), uid)) |index_usize|
-                return @intCast(index_usize);
-
-            return null;
-        }
-
-        pub fn add(list: *List, equipment: Equipment) error{NoSpaceLeft}!Equipment.Uid {
-            assert(equipment.uid_maybe == .none); // uid is not known before `add`
-
-            if (list.count == count_max) return error.NoSpaceLeft;
-            errdefer comptime unreachable;
-
-            const index = list.count;
-            defer list.count += 1;
-
-            list.uid_counter += 1;
-            const uid: Uid = @fromBackingInt(list.uid_counter);
-
-            list.uids_buffer[index] = uid;
-            list.bits_buffer[index] = equipment.bits;
-
-            return uid;
-        }
-    };
 };
+
+pub fn getEquipmentIndexByUid(storage: *Storage, uid: Equipment.Uid) ?u32 {
+    if (mem.findScalar(Equipment.Uid, storage.equipment.items(.uid), uid)) |index_usize|
+        return @intCast(index_usize);
+
+    return null;
+}
+
+pub fn addEquipment(storage: *Storage, equipment: Equipment) error{NoSpaceLeft}!Equipment.Uid {
+    storage.equipment_uid_counter += 1;
+    const uid: Equipment.Uid = .fromInt(storage.equipment_uid_counter);
+
+    storage.equipment.append(.{
+        .uid = uid,
+        .equipment = equipment,
+    }) catch |err| switch (err) {
+        error.NoSpaceLeft => |e| {
+            storage.weapon_uid_counter -= 1;
+            return e;
+        },
+    };
+    return uid;
+}
 
 pub const MainCity = extern struct {
     section: Section,
@@ -686,6 +663,7 @@ pub fn initDefaults(storage: *Storage) void {
         .weapons = .empty,
         .weapon_uid_counter = 0,
         .equipment = .empty,
+        .equipment_uid_counter = 0,
         .main_city = .{
             .section = MainCity.Section.fromInt(2).?,
         },
@@ -840,16 +818,13 @@ pub fn addRandomEquipment(
         }
 
         var equipment: Equipment = .{
-            .uid_maybe = .none,
-            .bits = .{
-                .id = Equipment.Id.fromInt(equip_id).?,
-                .main_property = main_property,
-                .sub_properties = @splat(.none),
-            },
+            .id = Equipment.Id.fromInt(equip_id).?,
+            .main_property = main_property,
+            .sub_properties = @splat(.none),
         };
 
         var rand_add_budget: u8 = 5;
-        var rand_add: [equipment.bits.sub_properties.len]u16 = @splat(0);
+        var rand_add: [equipment.sub_properties.len]u16 = @splat(0);
         for (rand_add[0 .. rand_add.len - 1], property_add_rand) |*add, rand| {
             if (rand_add_budget > 0) {
                 add.* = rand % rand_add_budget;
@@ -859,7 +834,7 @@ pub fn addRandomEquipment(
         rand_add[rand_add.len - 1] = rand_add_budget;
 
         for (
-            &equipment.bits.sub_properties,
+            &equipment.sub_properties,
             select_indices_rand,
             rand_add,
         ) |*sub_property, to_select_rand, add| {
@@ -870,7 +845,7 @@ pub fn addRandomEquipment(
             sub_property.add += add;
         }
 
-        _ = try storage.equipment.add(equipment);
+        _ = try storage.addEquipment(equipment);
     }
 }
 
@@ -884,7 +859,7 @@ pub fn saveToFile(storage: *Storage, io: Io, dir: Io.Dir, sub_path: []const u8) 
         .weapon_count = storage.weapons.count,
         .weapon_uid_counter = storage.weapon_uid_counter,
         .equipment_count = storage.equipment.count,
-        .equipment_uid_counter = storage.equipment.uid_counter,
+        .equipment_uid_counter = storage.equipment_uid_counter,
     };
 
     vecs.appendAssumeCapacity(@ptrCast(&header));
@@ -894,8 +869,8 @@ pub fn saveToFile(storage: *Storage, io: Io, dir: Io.Dir, sub_path: []const u8) 
     vecs.appendAssumeCapacity(@ptrCast(storage.avatars.items(.dressed_equipment)));
     vecs.appendAssumeCapacity(@ptrCast(storage.weapons.items(.weapon)));
     vecs.appendAssumeCapacity(@ptrCast(storage.weapons.items(.uid)));
-    vecs.appendAssumeCapacity(@ptrCast(storage.equipment.bits()));
-    vecs.appendAssumeCapacity(@ptrCast(storage.equipment.uids()));
+    vecs.appendAssumeCapacity(@ptrCast(storage.equipment.items(.equipment)));
+    vecs.appendAssumeCapacity(@ptrCast(storage.equipment.items(.uid)));
     vecs.appendAssumeCapacity(@ptrCast(&storage.main_city));
     vecs.appendAssumeCapacity(@ptrCast(&storage.role));
     vecs.appendAssumeCapacity(@ptrCast(&storage.time));
@@ -1045,9 +1020,9 @@ pub fn loadFromFile(
     vecs.appendAssumeCapacity(@ptrCast(storage.weapons.items(.uid)));
 
     storage.equipment.count = header.equipment_count;
-    storage.equipment.uid_counter = header.equipment_uid_counter;
-    vecs.appendAssumeCapacity(@ptrCast(storage.equipment.bits()));
-    vecs.appendAssumeCapacity(@ptrCast(storage.equipment.uids()));
+    storage.equipment_uid_counter = header.equipment_uid_counter;
+    vecs.appendAssumeCapacity(@ptrCast(storage.equipment.items(.equipment)));
+    vecs.appendAssumeCapacity(@ptrCast(storage.equipment.items(.uid)));
 
     vecs.appendAssumeCapacity(@ptrCast(&storage.main_city));
 

@@ -88,28 +88,28 @@ pub const EquipInfoList = BoundedMultiArray(struct {
     sub_properties_buffer: [Player.Storage.Equipment.Property.sub_count]gen.EquipProperty,
 }, Player.Storage.Equipment.count_max);
 
-pub fn equipInfo(out: EquipInfoList.Ptr, equipment: Player.Storage.Equipment) void {
+pub fn equipInfo(out: EquipInfoList.Ptr, kv: Player.Equipment.KeyValue) void {
     out.main_property.* = .{
-        .key = @backingInt(equipment.bits.main_property.key),
-        .base_value = equipment.bits.main_property.base,
-        .add_value = equipment.bits.main_property.add,
+        .key = kv.equipment.main_property.key,
+        .base_value = kv.equipment.main_property.base,
+        .add_value = kv.equipment.main_property.add,
     };
 
     var sub_property_list: std.ArrayList(gen.EquipProperty) =
         .initBuffer(out.sub_properties_buffer);
 
-    for (equipment.bits.sub_properties) |property_maybe| {
-        const property = property_maybe.unwrap() orelse continue;
+    for (kv.equipment.sub_properties) |property_maybe| {
+        const property = property_maybe orelse continue;
         sub_property_list.appendAssumeCapacity(.{
-            .key = @backingInt(property.key),
+            .key = property.key,
             .base_value = property.base,
             .add_value = property.add,
         });
     }
 
     out.equip_info.* = .{
-        .uid = @backingInt(equipment.uid_maybe.unwrap().?),
-        .id = @backingInt(equipment.bits.id),
+        .uid = kv.uid,
+        .id = kv.equipment.id,
         .level = 15,
         .star = 5,
         .propertys = out.main_property[0..1],
