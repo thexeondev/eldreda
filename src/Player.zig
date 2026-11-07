@@ -13,14 +13,24 @@ const gen = yuzuha.protobuf.gen;
 const pack = yuzuha.protobuf.pack;
 
 pub const Sync = struct {
-    populated: bool,
+    needs_player_sync_notify: bool,
     avatar_list: pack.AvatarInfoList,
     control_guise_avatar_changed: bool,
+    scene: Scene, // Not sure if this belongs here. Maybe `Sync` needs a better name.
+
+    pub const Scene = struct {
+        reload_hall_scene: bool,
+        time_modified: bool,
+    };
 
     pub const init: Sync = .{
-        .populated = false,
+        .needs_player_sync_notify = false,
         .avatar_list = .empty,
         .control_guise_avatar_changed = false,
+        .scene = .{
+            .reload_hall_scene = false,
+            .time_modified = false,
+        },
     };
 };
 
@@ -165,6 +175,9 @@ pub const ControlGuiseAvatar = enum(u32) {
         };
     }
 };
+
+pub const MainCitySection = Storage.MainCity.Section; // TODO: maybe move the definition here?
+pub const TimePeriod = Storage.Time.Period; // TODO: maybe move the definition here?
 
 fn avatarAtIndex(player: *const Player, index: u32) Avatar {
     const storage_avatar = player.storage.avatars.getPtr(index);
@@ -322,17 +335,38 @@ pub fn updateControlGuiseAvatar(player: *Player, guise: ControlGuiseAvatar) void
     player.needs_save = true;
     player.storage.role.control_guise_avatar = @fromBackingInt(@backingInt(guise));
 
-    player.sync.populated = true;
+    player.sync.needs_player_sync_notify = true;
     player.sync.control_guise_avatar_changed = true;
 }
 
+pub fn updateMainCitySection(player: *Player, section: MainCitySection) void {
+    player.needs_save = true;
+    player.sync.scene.reload_hall_scene = true;
+
+    player.storage.main_city.section = section;
+}
+
+pub fn enterMainCity(player: *Player) void {
+    player.sync.scene.reload_hall_scene = true;
+}
+
+// TODO: store minutes instead of time periods + make this API a bit more flexible,
+// TimePeriod.Change doesn't really help here.
+pub fn updateTimePeriod(player: *Player, change: TimePeriod.Change) void {
+    player.needs_save = true;
+    player.sync.scene.time_modified = true;
+
+    player.storage.time.period = change.new_value;
+    if (change.day_advanced) player.storage.time.day = player.storage.time.day.increment();
+}
+
 fn appendAvatarToSync(player: *Player, avatar: Avatar) void {
-    player.sync.populated = true;
+    player.sync.needs_player_sync_notify = true;
     pack.avatarInfo(player.sync.avatar_list.addOneAssumeCapacity(), avatar);
 }
 
 pub fn buildPlayerSyncScNotify(player: *Player) ?gen.PlayerSyncScNotify {
-    if (!player.sync.populated) return null;
+    if (!player.sync.needs_player_sync_notify) return null;
 
     var notify: gen.PlayerSyncScNotify = .{ .misc = .{} };
     notify.avatar = .{ .avatar_list = player.sync.avatar_list.items(.avatar_info) };
@@ -350,4 +384,32 @@ pub fn buildPlayerSyncScNotify(player: *Player) ?gen.PlayerSyncScNotify {
     }
 
     return notify;
+}
+
+pub fn buildEnterSceneScNotify(player: *Player) ?gen.EnterSceneScNotify {
+    if (!player.sync.scene.reload_hall_scene) return null;
+
+    return .{
+        .scene = pack.sceneDataForHall(.{
+            .main_city = &player.storage.main_city,
+            .role = &player.storage.role,
+            .time = &player.storage.time,
+        }),
+    };
+}
+
+pub fn buildHallRefresh(player: *Player) ?gen.HallRefreshScNotify {
+    if (player.sync.scene.reload_hall_scene) return null; // full EnterSceneScNotify is pending anyway
+
+    const needs_hall_refresh = player.sync.scene.time_modified;
+    if (!needs_hall_refresh) return null;
+
+    var refresh_notify = pack.hall(gen.HallRefreshScNotify, .{
+        .main_city = &player.storage.main_city,
+        .role = &player.storage.role,
+        .time = &player.storage.time,
+    });
+    refresh_notify.force_refresh = true;
+
+    return refresh_notify;
 }

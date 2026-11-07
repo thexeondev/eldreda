@@ -6,14 +6,8 @@ const Session = yuzuha.Session;
 const protobuf = yuzuha.protobuf;
 
 pub fn EnterWorldCsReq(session: *Session) !void {
-    try session.sink.notify(protobuf.gen.EnterSceneScNotify, &.{
-        .scene = protobuf.pack.sceneDataForHall(.{
-            .main_city = &session.player.storage.main_city,
-            .role = &session.player.storage.role,
-            .time = &session.player.storage.time,
-        }),
-    });
-
+    session.player.enterMainCity();
+    try session.notify();
     return session.sink.respond(protobuf.gen.EnterWorldScRsp, &.{});
 }
 
@@ -22,33 +16,19 @@ pub fn EnterSectionCompleteCsReq(session: *Session) !void {
 }
 
 pub fn LeaveCurSceneCsReq(session: *Session) !void {
-    try session.sink.notify(protobuf.gen.EnterSceneScNotify, &.{
-        .scene = protobuf.pack.sceneDataForHall(.{
-            .main_city = &session.player.storage.main_city,
-            .role = &session.player.storage.role,
-            .time = &session.player.storage.time,
-        }),
-    });
-
+    session.player.enterMainCity();
+    try session.notify();
     return session.sink.respondMinimal(.LeaveCurSceneScRsp, .{ .retcode = .RET_SUCC });
 }
 
 pub fn EnterSectionCsReq(session: *Session) !void {
     const request = try session.command.decodeBody(protobuf.gen.EnterSectionCsReq.Decoded);
-    const section = Player.Storage.MainCity.Section.fromInt(request.section_id) orelse
+    const section = Player.MainCitySection.fromInt(request.section_id) orelse
         return session.sink.respondMinimal(.EnterSectionScRsp, .{ .retcode = .RET_SCENE_NOT_FOUND });
 
-    session.playerModified();
-    session.player.storage.main_city.section = section;
+    session.player.updateMainCitySection(section);
 
-    try session.sink.notify(protobuf.gen.EnterSceneScNotify, &.{
-        .scene = protobuf.pack.sceneDataForHall(.{
-            .main_city = &session.player.storage.main_city,
-            .role = &session.player.storage.role,
-            .time = &session.player.storage.time,
-        }),
-    });
-
+    try session.notify();
     return session.sink.respondMinimal(.EnterSectionScRsp, .{ .retcode = .RET_SUCC });
 }
 
@@ -61,7 +41,7 @@ pub fn ModMainCityTimeCsReq(session: *Session) !void {
             .{ .retcode = .RET_INVALID_REQUEST_DATA },
         );
 
-    const next_time_period_maybe: ?Player.Storage.Time.Period = switch (period_tag) {
+    const next_time_period_maybe: ?Player.TimePeriod = switch (period_tag) {
         .TimePeriodType_MORNING => .morning,
         .TimePeriodType_AFTERNOON => .afternoon,
         .TimePeriodType_EVENING => .evening,
@@ -73,23 +53,10 @@ pub fn ModMainCityTimeCsReq(session: *Session) !void {
     };
 
     if (next_time_period_maybe) |next_time_period| {
-        session.playerModified();
-
         const time_period_change = session.player.storage.time.period.fastForwardTo(next_time_period);
-
-        if (time_period_change.day_advanced)
-            session.player.storage.time.day = session.player.storage.time.day.increment();
-
-        session.player.storage.time.period = time_period_change.new_value;
+        session.player.updateTimePeriod(time_period_change);
     }
 
-    var refresh_notify = protobuf.pack.hall(protobuf.gen.HallRefreshScNotify, .{
-        .main_city = &session.player.storage.main_city,
-        .role = &session.player.storage.role,
-        .time = &session.player.storage.time,
-    });
-    refresh_notify.force_refresh = true;
-    try session.sink.notify(protobuf.gen.HallRefreshScNotify, &refresh_notify);
-
+    try session.notify();
     return session.sink.respondMinimal(.ModMainCityTimeScRsp, .{ .retcode = .RET_SUCC });
 }

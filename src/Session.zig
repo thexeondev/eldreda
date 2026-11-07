@@ -15,14 +15,15 @@ sink: Sink,
 
 pub const Error = protobuf.DecodeError || Command.EncodeError;
 
-/// Deprecated.
-pub fn playerModified(session: *Session) void {
-    session.player.needs_save = true;
-}
-
 pub fn notify(session: *Session) Command.EncodeError!void {
     if (session.player.buildPlayerSyncScNotify()) |sync|
         try session.sink.notify(protobuf.gen.PlayerSyncScNotify, &sync);
+
+    if (session.player.buildEnterSceneScNotify()) |enter_scene|
+        try session.sink.notify(protobuf.gen.EnterSceneScNotify, &enter_scene);
+
+    if (session.player.buildHallRefresh()) |hall_refresh|
+        try session.sink.notify(protobuf.gen.HallRefreshScNotify, &hall_refresh);
 }
 
 pub const Sink = struct {
